@@ -2,7 +2,8 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:15
+    image: postgres:15-alpine
+    container_name: subrayado-db
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -10,19 +11,34 @@ services:
       POSTGRES_DB: subrayado
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   backend:
     build: ./backend
+    container_name: subrayado-backend
     ports:
       - "3000:3000"
     environment:
       DATABASE_URL: "postgresql://postgres:password@db:5432/subrayado"
     depends_on:
       - db
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
 
   frontend:
     build: ./frontend
+    container_name: subrayado-frontend
     ports:
       - "3001:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
     depends_on:
       - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
