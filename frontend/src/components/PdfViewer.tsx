@@ -33,7 +33,10 @@ export default function PdfViewer({ fileUrl, roomId, socket, initialHighlights }
               style={Object.assign(
                 {},
                 {
-                  background: 'yellow',
+                  //Highlihgt
+                  background: 'rgba(255, 226, 0, 0.4)',
+                  //Underline
+                  borderBottom: '3px solid #d4af37',
                   opacity: 0.4,
                   pointerEvents: 'none',
                   position: 'absolute',
