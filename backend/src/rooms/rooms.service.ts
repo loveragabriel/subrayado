@@ -9,13 +9,15 @@ export class RoomsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createRoomDto: CreateRoomDto): Promise<Room> {
-    return this.prisma.room.create({
+    const newRoom = await this.prisma.room.create({
       data: {
         title: createRoomDto.title,
         bookUrl: createRoomDto.bookUrl,
         accessPin: Math.random().toString(36).substring(2, 8).toUpperCase(),
       },
     });
+    console.log("Sala creada en DB:", newRoom);
+  return newRoom;
   }
 
   async findAll() {
@@ -30,9 +32,22 @@ export class RoomsService {
     });
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} room`;
+  async findOne(id: string) {
+  try {
+    const room = await this.prisma.room.findUnique({
+      where: { id },
+    });
+    if (!room) {
+      console.log(`Sala con ID ${id} no encontrada`);
+      return null;
+    }
+    return room;
+  } catch (error) {
+    // Esto imprimirá el error real en la consola de tu BACKEND
+    console.error("Error en Prisma findOne:", error.message);
+    return null; 
   }
+}
 
   update(id: string, updateRoomDto: UpdateRoomDto) {
     return `This action updates a #${id} room`;

@@ -7,18 +7,38 @@ import {
   Param,
   Delete,
   NotFoundException,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
-import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
-
+import { FileInterceptor } from '@nestjs/platform-express/multer/interceptors/file.interceptor';
+import { cloudinaryStorage } from 'src/config/cloudinary/config';
 @Controller('rooms')
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 
   @Post()
-  create(@Body() createRoomDto: CreateRoomDto) {
-    return this.roomsService.create(createRoomDto);
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: cloudinaryStorage,
+      fileFilter: (req, file, callback) => {
+        if (!file.originalname.match(/\.(pdf)$/)) {
+          return callback(new Error('Solo se permiten archivos PDF'), false);
+        }
+        callback(null, true);
+      },
+    }),
+  ) 
+  async create(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('title') title: string,
+  ) {
+    if (!file) {
+      throw new NotFoundException('No se ha subido ningún archivo o el formato es inválido');
+    }
+    const fileUrl = (file as any).path;
+    return this.roomsService.create({ title, bookUrl: fileUrl });
   }
 
   @Get('join/:pin')
