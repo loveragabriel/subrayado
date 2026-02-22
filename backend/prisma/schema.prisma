@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(uuid())
+  username   String
+  email      String   @unique
+  highlights Highlight[]
+  rooms      RoomMember[]
+}
+
+model Room {
+  id         String   @id @default(uuid())
+  title      String
+  bookUrl    String
+  accessPin  String   @unique
+  isActive   Boolean  @default(true)
+  members    RoomMember[]
+}
+
+model RoomMember {
+  userId String
+  roomId String
+  user   User @relation(fields: [userId], references: [id])
+  room   Room @relation(fields: [roomId], references: [id])
+  @@id([userId, roomId])
+}
+
+model Highlight {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  roomId    String
+  page      Int
+  content   String?
+  coords    Json     
+  user      User     @relation(fields: [userId], references: [id])
+}
