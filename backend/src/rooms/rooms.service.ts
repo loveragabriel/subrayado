@@ -8,20 +8,23 @@ import { Room } from '@prisma/client';
 export class RoomsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createRoomDto: CreateRoomDto): Promise<Room> {
+  async create(createRoomDto: CreateRoomDto, file: any): Promise<Room> {
     const newRoom = await this.prisma.room.create({
       data: {
         title: createRoomDto.title,
-        bookUrl: createRoomDto.bookUrl,
+        bookUrl: file.path,
+        bookPublicId: file.filename,
         accessPin: Math.random().toString(36).substring(2, 8).toUpperCase(),
       },
     });
-    console.log("Sala creada en DB:", newRoom);
-  return newRoom;
+    console.log('Sala creada en DB:', newRoom);
+    return newRoom;
   }
 
   async findAll() {
-    return this.prisma.room.findMany();
+    return this.prisma.room.findMany({
+      include: { highlights: true },
+    });
   }
 
   async findByPin(pin: string): Promise<Room | null> {
@@ -29,25 +32,16 @@ export class RoomsService {
       where: {
         accessPin: pin.toUpperCase(),
       },
+      include: { highlights: true },
     });
   }
 
   async findOne(id: string) {
-  try {
-    const room = await this.prisma.room.findUnique({
+    return this.prisma.room.findUnique({
       where: { id },
+      include: { highlights: true },
     });
-    if (!room) {
-      console.log(`Sala con ID ${id} no encontrada`);
-      return null;
-    }
-    return room;
-  } catch (error) {
-    // Esto imprimirá el error real en la consola de tu BACKEND
-    console.error("Error en Prisma findOne:", error.message);
-    return null; 
   }
-}
 
   update(id: string, updateRoomDto: UpdateRoomDto) {
     return `This action updates a #${id} room`;

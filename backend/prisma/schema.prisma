@@ -16,12 +16,16 @@ model User {
 }
 
 model Room {
-  id         String   @id @default(uuid())
-  title      String
-  bookUrl    String
-  accessPin  String   @unique
-  isActive   Boolean  @default(true)
-  members    RoomMember[]
+  id            String      @id @default(uuid())
+  title         String
+  bookUrl       String      
+  bookPublicId  String?     
+  accessPin     String      @unique
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt 
+  //relations
+  members RoomMember[]
+  highlights Highlight[]
 }
 
 model RoomMember {
@@ -34,10 +38,14 @@ model RoomMember {
 
 model Highlight {
   id        Int      @id @default(autoincrement())
-  userId    String
+  userId    String? //Just for MVP release
   roomId    String
   page      Int
   content   String?
-  coords    Json     
-  user      User     @relation(fields: [userId], references: [id])
+  coords    Json     // For saving coords
+  // relations
+  user      User?     @relation(fields: [userId], references: [id])
+  room      Room     @relation(fields: [roomId], references: [id])
+  
+  createdAt DateTime @default(now())
 }

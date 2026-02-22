@@ -37,8 +37,7 @@ export class RoomsController {
     if (!file) {
       throw new NotFoundException('No se ha subido ningún archivo o el formato es inválido');
     }
-    const fileUrl = (file as any).path;
-    return this.roomsService.create({ title, bookUrl: fileUrl });
+    return this.roomsService.create({ title, bookUrl: (file as any).path }, file);
   }
 
   @Get('join/:pin')
