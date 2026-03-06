@@ -17,7 +17,6 @@ export class RoomsService {
         accessPin: Math.random().toString(36).substring(2, 8).toUpperCase(),
       },
     });
-    console.log('Sala creada en DB:', newRoom);
     return newRoom;
   }
 
@@ -49,5 +48,30 @@ export class RoomsService {
 
   remove(id: string) {
     return `This action removes a #${id} room`;
+  }
+
+ async addWordToGlossary( data: { term: string; roomId: string; page: number; coords: any }) {
+
+  return this.prisma.$transaction(async (tempPrisma) => { 
+
+    const highlight = await tempPrisma.highlight.create({
+      data: {
+        content: data.term,
+        type: 'glossary',
+        page: data.page,
+        coords: data.coords,
+        roomId: data.roomId,
+      },
+    }); 
+    await tempPrisma.glossary.create({
+      data: {
+        term: data.term,  
+        page: data.page,
+        coords: data.coords,
+        roomId: data.roomId,
+      },
+    });
+    return highlight;
+  });
   }
 }

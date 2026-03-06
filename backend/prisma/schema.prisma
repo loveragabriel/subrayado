@@ -26,6 +26,7 @@ model Room {
   //relations
   members RoomMember[]
   highlights Highlight[]
+  glossaries Glossary[]
 }
 
 model RoomMember {
@@ -43,9 +44,21 @@ model Highlight {
   page      Int
   content   String?
   coords    Json     // For saving coords
+  type      String   @default("underline")
   // relations
   user      User?     @relation(fields: [userId], references: [id])
   room      Room     @relation(fields: [roomId], references: [id])
   
+  createdAt DateTime @default(now())
+}
+
+model Glossary {
+  id        Int      @id @default(autoincrement())
+  term      String
+  page      Int
+  coords    Json
+  roomId    String
+  //relations
+  room      Room     @relation(fields: [roomId], references: [id])
   createdAt DateTime @default(now())
 }

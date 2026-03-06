@@ -3,18 +3,20 @@ import { useState, useEffect } from 'react';
 import { Viewer, Worker } from '@react-pdf-viewer/core';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import { highlightPlugin, RenderHighlightsProps } from '@react-pdf-viewer/highlight';
+import { Socket } from 'socket.io-client';
+import { Highlight } from '../types/highlights';
 
-export default function PdfViewer({ fileUrl, roomId, socket, initialHighlights }: any) {
-  const [highlights, setHighlights] = useState<any[]>(initialHighlights || []);
+export default function PdfViewer({ fileUrl, roomId, socket, initialHighlights }: { fileUrl: string; roomId: string; socket: Socket | null; initialHighlights: Highlight[] }) {
+  const [highlights, setHighlights] = useState<Highlight[]>(initialHighlights || []);
 
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
   // Highlight on realtime
   useEffect(() => {
     if (!socket) return;
-
     // set when someone highlight something
-    socket.on('receivedHighlight', (newHighlight: any) => {
+    socket.on('receivedHighlight', (newHighlight: Highlight) => {
+
       setHighlights((current) => [...current, newHighlight]);
     });
 
@@ -25,8 +27,10 @@ export default function PdfViewer({ fileUrl, roomId, socket, initialHighlights }
   const highlightPluginInstance = highlightPlugin({
     renderHighlights: (props: RenderHighlightsProps) => (
       <div>
-        {highlights
-          .filter((h) => h.page === props.pageIndex) // Just show highlights of the current page
+         {highlights
+      .filter((h) => {
+        return h.page === props.pageIndex;
+      })
           .map((h, index) => (
             <div
               key={index}
@@ -57,10 +61,11 @@ export default function PdfViewer({ fileUrl, roomId, socket, initialHighlights }
           zIndex: 10,
         }}
         onClick={() => {
+          const pageIndex = props.highlightAreas[0]?.pageIndex ?? 0;
           const highlightData = {
             roomId,
-            page: props.selectionRegion.pageIndex,
-            coords: props.selectionRegion,
+            page: pageIndex,
+            coords: props.highlightAreas[0],
             content: props.selectedText,
           };
 

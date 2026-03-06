@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { io, Socket } from 'socket.io-client'
 import '@react-pdf-viewer/core/lib/styles/index.css'
@@ -15,12 +15,13 @@ interface Room {
   title: string
   bookUrl: string
   accessPin: string
+  highlights: Highlight[]
 }
 
 export default function RoomPage() {
   const params = useParams()
   const [room, setRoom] = useState<Room | null>(null)
-  const socketRef = useRef<Socket | null>(null)
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   // Update data to the room from backend
   useEffect(() => {
@@ -42,19 +43,19 @@ export default function RoomPage() {
     if (!params.id) return;
 
     // Connection to Socket.IO server
-    socketRef.current = io('http://localhost:3000', {
+    const newSocket = io('http://localhost:3000', {
       transports: ['websocket']
     });
 
-    socketRef.current.emit('joinRoom', params.id);
-
-    // Looks for new highlights from other users
-    socketRef.current.on('receiveHighlight', (data) => {
-      console.log("Nuevo subrayado recibido:", data);
+    newSocket.on('connect', () => {
+      console.log('🔌 Socket conectado');
+      newSocket.emit('joinRoom', params.id);
     });
 
+    setSocket(newSocket);
+
     return () => {
-      socketRef.current?.disconnect();
+      newSocket.disconnect();
     };
   }, [params.id]);
 
@@ -70,8 +71,8 @@ export default function RoomPage() {
         <PdfViewer
           fileUrl={room.bookUrl}
           roomId={room.id}
-          socket={socketRef.current}
-          initialHighlights={room.highlights} // <--- Pasamos los que ya existen
+          socket={socket}
+          initialHighlights={room.highlights} 
         />      </main>
     </div>
   )
