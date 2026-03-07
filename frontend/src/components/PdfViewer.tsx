@@ -32,8 +32,11 @@ export default function PdfViewer({ fileUrl, roomId, socket, initialHighlights }
         return h.page === props.pageIndex;
       })
           .map((h, index) => (
+            (Array.isArray(h.coords) ? h.coords : [h.coords])
+            .filter((coord)=> coord.width > 0 && coord.height > 0) 
+            .map((coord, idx) => (
             <div
-              key={index}
+              key={`highlight-${index}-${idx}`}
               style={Object.assign(
                 {},
                 {
@@ -45,9 +48,10 @@ export default function PdfViewer({ fileUrl, roomId, socket, initialHighlights }
                   pointerEvents: 'none',
                   position: 'absolute',
                 },
-                props.getCssProperties(h.coords, props.rotation) // Change coordinates to CSS properties
+                props.getCssProperties(coord, props.rotation) // Change coordinates to CSS properties
               )}
             />
+            ))
           ))}
       </div>
     ),
@@ -65,14 +69,14 @@ export default function PdfViewer({ fileUrl, roomId, socket, initialHighlights }
           const highlightData = {
             roomId,
             page: pageIndex,
-            coords: props.highlightAreas[0],
+            coords: props.highlightAreas,
             content: props.selectedText,
           };
 
           socket?.emit('sendHighlight', highlightData);
-
+          
           // Add the currently user's highlight locally immediately for better UX
-          setHighlights((current) => [...current, highlightData]);
+          setHighlights((current) => [...current, highlightData as unknown as Highlight]);
           props.toggle();
         }}
       >

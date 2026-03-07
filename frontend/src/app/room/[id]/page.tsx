@@ -5,6 +5,7 @@ import { io, Socket } from 'socket.io-client'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/default-layout/lib/styles/index.css'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 
 const PdfViewer = dynamic(() => import('@/components/PdfViewer'), {
   ssr: false,
@@ -66,6 +67,7 @@ export default function RoomPage() {
       <header className="bg-blue-600 text-white p-4 flex justify-between items-center h-16">
         <h1 className="text-xl font-bold">{room.title}</h1>
         <div className="bg-blue-800 px-3 py-1 rounded">PIN: {room.accessPin}</div>
+        <Link href="/" className="bg-red-500 px-3 py-1 rounded text-white">Salir</Link>
       </header>
       <main className="flex-1 overflow-hidden bg-slate-200">
         <PdfViewer
