@@ -22,22 +22,34 @@ export class RoomsController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: cloudinaryStorage,
-      fileFilter: (req, file, callback) => {
-        if (!file.originalname.match(/\.(pdf)$/)) {
-          return callback(new Error('Solo se permiten archivos PDF'), false);
+      limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+      fileFilter: (_req, file, callback) => {
+        if (!file.originalname.match(/\.(pdf|epub)$/i)) {
+          return callback(
+            new Error('Solo se permiten archivos PDF o ePub'),
+            false,
+          );
         }
         callback(null, true);
       },
     }),
-  ) 
+  )
   async create(
     @UploadedFile() file: Express.Multer.File,
     @Body('title') title: string,
+    @Body('startDate') startDate?: string,
+    @Body('endDate') endDate?: string,
   ) {
     if (!file) {
-      throw new NotFoundException('No se ha subido ningún archivo o el formato es inválido');
+      throw new NotFoundException(
+        'No se ha subido ningún archivo o el formato es inválido',
+      );
     }
-    return this.roomsService.create({ title, bookUrl: (file as any).path }, file);
+    const multerFile = file as Express.Multer.File & { path: string };
+    return this.roomsService.create(
+      { title, bookUrl: multerFile.path, startDate, endDate },
+      file,
+    );
   }
 
   @Get('join/:pin')

@@ -9,10 +9,12 @@ cloudinary.config({
 
 export const cloudinaryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: async (req, file) => {
+  params: async (_req, file) => {
+    const isEpub = file.originalname.toLowerCase().endsWith('.epub');
     return {
       folder: 'subrayado_books',
-      format: 'pdf',
+      resource_type: isEpub ? 'raw' : 'image',
+      ...(isEpub ? {} : { format: 'pdf' }),
       public_id: file.originalname.split('.')[0] + '-' + Date.now(),
     };
   },
