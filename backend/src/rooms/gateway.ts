@@ -6,7 +6,6 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { RoomsService } from './rooms.service';
 
 @WebSocketGateway({
@@ -16,7 +15,7 @@ export class RoomsGateway {
   @WebSocketServer()
   server: Server;
 
-  constructor(private prisma: PrismaService, private roomsService: RoomsService) {}
+  constructor(private roomService: RoomsService) {}
 
   // Check with a user connects
   @SubscribeMessage('joinRoom')
@@ -29,11 +28,11 @@ export class RoomsGateway {
 
     // If there are more than 20 users, send an error message to the client
     if (userConnectes.length >= 20) {
-      client.emit('error', 'La sala a alcanzadoel límite de usuarios');
+      client.emit('error', 'La sala alcanzó el límite de usuarios');
       return;
     }
     // If everything is ok, join the room
-    client.join(roomId);
+    await client.join(roomId);
   }
 
   // Looks for new highlights from users
@@ -43,29 +42,14 @@ export class RoomsGateway {
     data: { roomId: string; page: number; coords: any; content?: string },
     @ConnectedSocket() client: Socket,
   ) {
-    console.log('📩 sendHighlight recibido:', data); // ← acá sí va
-
     try {
-    const newHighlight = await this.prisma.highlight.create({
-      data: {
-        roomId: data.roomId,
-        userId: null,
-        page: data.page,
-        coords: data.coords,
-        content: data.content,
-        type: 'underline',
-      },
-    });
-    console.log('📡 Emitiendo a room:', data.roomId);
-
-    this.server.to(data.roomId).emit('receivedHighlight', newHighlight);
-    return newHighlight;
-  } catch (error) {
-    client.emit('error', 'Error al guardar subrayado'); 
-  };
-}
-
-
+      const newHighlight = await this.roomService.createHighlight(data);
+      this.server.to(data.roomId).emit('receivedHighlight', newHighlight);
+      return newHighlight;
+    } catch {
+      client.emit('error', 'Error al guardar subrayado');
+    }
+  }
 
   @SubscribeMessage('addWord')
   async handleAddWord(
@@ -74,21 +58,12 @@ export class RoomsGateway {
     @ConnectedSocket() client: Socket, 
   ) {
     try {
-      // Add the word to the glossary
-      const newEntrey = await this.prisma.glossary.create({
-        data: {
-          roomId: data.roomId, 
-          term: data.term, 
-          page: data.page,
-          coords: data.coords,
-        },
-      }); 
-      // Emit the new entry to all clients in the room
-      this.server.to(data.roomId).emit('newGlossaryEntry', newEntrey);
-      return; 
+      const newEntry = await this.roomService.addWordToGlossary(data);
+      this.server.to(data.roomId).emit('newGlossaryEntry', newEntry);
+      return newEntry;
+    } catch (error) {
+      console.error('❌ Error al agregar palabra:', error);
+      client.emit('error', 'Error al agregar palabra al glosario');
+    }
   }
-  catch(error) {
-    console.error('❌ Error al agregar palabra:', error);
-  }
-}
 }
