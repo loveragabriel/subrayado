@@ -18,11 +18,14 @@ model User {
 model Room {
   id            String      @id @default(uuid())
   title         String
-  bookUrl       String      
-  bookPublicId  String?     
+  bookUrl       String
+  bookPublicId  String?
   accessPin     String      @unique
+  adminToken    String?     @unique
+  startDate     DateTime?
+  endDate       DateTime?
   createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt 
+  updatedAt     DateTime    @updatedAt
   //relations
   members RoomMember[]
   highlights Highlight[]
