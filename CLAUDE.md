@@ -17,19 +17,19 @@ Two independent apps under one repo:
 
 - `app.module.ts` — Root module; imports `RoomsModule` and `PrismaModule` (global ConfigModule)
 - `rooms/` — Single feature module handling all business logic:
-  - `rooms.controller.ts` — REST endpoints: `POST /rooms` (upload PDF + create room), `GET /rooms/join/:pin`, `GET /rooms/:id`
-  - `rooms.service.ts` — Prisma queries: room CRUD, highlight creation, glossary management
-  - `gateway.ts` — Socket.IO gateway: `joinRoom`, `sendHighlight`, `addWord` events; emits `receivedHighlight` and `newGlossaryEntry` to room members
-  - `dto/` — `CreateRoomDto`, `UpdateRoomDto`
-- `config/cloudinary/config.ts` — Cloudinary client config + Multer storage (PDFs stored in `subrayado_books/` folder)
+  - `rooms.controller.ts` — REST endpoints: `POST /rooms` (upload PDF/ePub ≤50 MB + create room), `GET /rooms/join/:pin`, `GET /rooms/:id`
+  - `rooms.service.ts` — Prisma queries: room CRUD, highlight creation, glossary management; validates `startDate`/`endDate` (past date, end before start, missing start, min 1-day period) throwing `BadRequestException` with specific messages
+  - `gateway.ts` — Socket.IO gateway: `joinRoom`, `sendHighlight`, `addWord` events; emits `receivedHighlight` and `newGlossaryEntry` to room members; room capped at 20 concurrent users
+  - `dto/` — `CreateRoomDto` (title, bookUrl, startDate?, endDate?), `UpdateRoomDto`
+- `config/cloudinary/config.ts` — Cloudinary + Multer storage; PDFs stored as `resource_type: image`, ePub as `resource_type: raw` in `subrayado_books/` folder
 - `prisma/` — `PrismaService` singleton wrapping `@prisma/client`
-- `prisma/schema.prisma` — Data models: `Room`, `User`, `RoomMember`, `Highlight` (coords stored as JSON), `Glossary`
+- `prisma/schema.prisma` — Data models: `Room` (includes `adminToken`, `startDate`, `endDate`), `User`, `RoomMember`, `Highlight` (coords stored as JSON), `Glossary`
 
-Room creation generates a random 6-character uppercase PIN (`Math.random().toString(36).substring(2, 8).toUpperCase()`).
+Room creation generates a random 6-character uppercase PIN (`Math.random().toString(36).substring(2, 8).toUpperCase()`) and a cryptographically secure `adminToken` (`randomBytes(32).toString('hex')`) returned to the coordinator for admin access recovery.
 
 ### Frontend (`frontend/src/`)
 
-- `app/page.tsx` — Home page: create room (upload PDF via form) or join by PIN
+- `app/page.tsx` — Home page: create room form (title, PDF/ePub upload, start/end dates, inline error UI, ES/EN language switcher) → confirmation screen (PIN + optional admin link with copy buttons) or join by PIN
 - `app/room/[id]/page.tsx` — Room page: fetches room data, establishes Socket.IO connection, renders `PdfViewer`
 - `components/PdfViewer.tsx` — Core UI: `@react-pdf-viewer` with highlight plugin; emits `sendHighlight` on text selection, listens for `receivedHighlight` to update state in real time
 - `types/highlights.ts` — `Highlight` type shared across frontend
