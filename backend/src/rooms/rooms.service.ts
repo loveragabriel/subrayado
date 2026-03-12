@@ -12,35 +12,28 @@ export class RoomsService {
     createRoomDto: CreateRoomDto,
     file: Express.Multer.File,
   ): Promise<Room> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Compare YYYY-MM-DD strings in local timezone — avoids UTC parsing shifting dates by one day
+    const todayStr = new Date().toLocaleDateString('en-CA');
 
     if (createRoomDto.startDate) {
-      const start = new Date(createRoomDto.startDate as string);
-      if (isNaN(start.getTime())) {
+      const startStr = (createRoomDto.startDate as string).slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(startStr)) {
         throw new BadRequestException('La fecha de inicio no es válida.');
       }
-      if (start < today) {
+      if (startStr < todayStr) {
         throw new BadRequestException(
           'La fecha de inicio no puede ser anterior a hoy.',
         );
       }
 
       if (createRoomDto.endDate) {
-        const end = new Date(createRoomDto.endDate as string);
-        if (isNaN(end.getTime())) {
+        const endStr = (createRoomDto.endDate as string).slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(endStr)) {
           throw new BadRequestException('La fecha de cierre no es válida.');
         }
-        if (end <= start) {
+        if (endStr <= startStr) {
           throw new BadRequestException(
             'La fecha de cierre debe ser posterior a la fecha de inicio.',
-          );
-        }
-        const diffDays =
-          (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-        if (diffDays < 1) {
-          throw new BadRequestException(
-            'El periodo mínimo entre inicio y cierre es de 1 día.',
           );
         }
       }

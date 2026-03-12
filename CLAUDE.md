@@ -31,8 +31,9 @@ Room creation generates a random 6-character uppercase PIN (`Math.random().toStr
 
 - `app/page.tsx` — Home page: create room form (title, PDF/ePub upload, start/end dates, inline error UI, ES/EN language switcher) → confirmation screen (PIN + optional admin link with copy buttons) or join by PIN
 - `app/room/[id]/page.tsx` — Room page: fetches room data, establishes Socket.IO connection, renders `PdfViewer`
-- `components/PdfViewer.tsx` — Core UI: `@react-pdf-viewer` with highlight plugin; emits `sendHighlight` on text selection, listens for `receivedHighlight` to update state in real time
-- `types/highlights.ts` — `Highlight` type shared across frontend
+- `components/PdfViewer.tsx` — Core UI: `@react-pdf-viewer` with highlight plugin; emits `sendHighlight` on text selection, listens for `receivedHighlight` to update state in real time; `coords` stored as either single object or array (multi-area selections), rendered as absolute `div` overlays
+- `components/GlossarySidebar.tsx` — Slide-in sidebar showing glossary entries (highlights with `type === 'glossary'`); each entry links to a Google "define:" search; listens for `newGlossaryEntry` socket event in the parent room page
+- `types/highlights.ts` — `Highlight` type: `id`, `userId`, `roomId`, `page`, `content`, `coords`, `type` (e.g. `'highlight'` | `'glossary'`), `createdAt`
 
 **Important**: `PdfViewer` is loaded with `dynamic()` (SSR disabled) because `@react-pdf-viewer` is browser-only. The PDF.js worker is loaded from unpkg CDN at version `3.4.120` — must match `pdfjs-dist` package version.
 

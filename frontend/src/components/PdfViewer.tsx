@@ -6,24 +6,37 @@ import { highlightPlugin, RenderHighlightsProps } from '@react-pdf-viewer/highli
 import { Socket } from 'socket.io-client';
 import { Highlight } from '../types/highlights';
 
-export default function PdfViewer({ fileUrl, roomId, socket, initialHighlights }: { fileUrl: string; roomId: string; socket: Socket | null; initialHighlights: Highlight[] }) {
+const uiCopy = {
+  es: { underline: 'Subrayar', glossary: 'Glosario' },
+  en: { underline: 'Underline', glossary: 'Glossary' },
+}
+
+function isSingleWord(text: string): boolean {
+  return /^\S+$/.test(text.trim())
+}
+
+export default function PdfViewer({ fileUrl, roomId, socket, initialHighlights, lang = 'es' }: { fileUrl: string; roomId: string; socket: Socket | null; initialHighlights: Highlight[]; lang?: 'es' | 'en' }) {
   const [highlights, setHighlights] = useState<Highlight[]>(initialHighlights || []);
+  const t = uiCopy[lang];
 
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
-  // Highlight on realtime
+  // Sync real-time events from other users in the room
   useEffect(() => {
     if (!socket) return;
-    // set when someone highlight something
     socket.on('receivedHighlight', (newHighlight: Highlight) => {
-
       setHighlights((current) => [...current, newHighlight]);
     });
-
-    return () => { socket.off('receivedHighlight'); };
+    socket.on('newGlossaryEntry', (newEntry: Highlight) => {
+      setHighlights((current) => [...current, newEntry]);
+    });
+    return () => {
+      socket.off('receivedHighlight');
+      socket.off('newGlossaryEntry');
+    };
   }, [socket]);
 
-  // render the highlights 
+  // render the highlights
   const highlightPluginInstance = highlightPlugin({
     renderHighlights: (props: RenderHighlightsProps) => (
       <div>
@@ -33,56 +46,84 @@ export default function PdfViewer({ fileUrl, roomId, socket, initialHighlights }
       })
           .map((h, index) => (
             (Array.isArray(h.coords) ? h.coords : [h.coords])
-            .filter((coord)=> coord.width > 0 && coord.height > 0) 
+            .filter((coord)=> coord.width > 0 && coord.height > 0)
             .map((coord, idx) => (
             <div
               key={`highlight-${index}-${idx}`}
               style={Object.assign(
                 {},
                 {
-                  //Highlihgt
-                  background: 'rgba(255, 226, 0, 0.4)',
-                  //Underline
-                  borderBottom: '3px solid #d4af37',
-                  opacity: 0.4,
+                  background: h.type === 'glossary' ? 'rgba(96, 165, 250, 0.35)' : 'rgba(255, 226, 0, 0.4)',
+                  borderBottom: h.type === 'glossary' ? '3px solid #2563eb' : '3px solid #d4af37',
+                  opacity: 0.5,
                   pointerEvents: 'none',
                   position: 'absolute',
                 },
-                props.getCssProperties(coord, props.rotation) // Change coordinates to CSS properties
+                props.getCssProperties(coord, props.rotation)
               )}
             />
             ))
           ))}
       </div>
     ),
-    renderHighlightTarget: (props) => (
-      <button
-        className="bg-yellow-400 text-black px-2 py-1 rounded shadow-lg text-sm font-bold"
-        style={{
-          position: 'absolute',
-          left: `${props.selectionRegion.left}%`,
-          top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
-          zIndex: 10,
-        }}
-        onClick={() => {
-          const pageIndex = props.highlightAreas[0]?.pageIndex ?? 0;
-          const highlightData = {
-            roomId,
-            page: pageIndex,
-            coords: props.highlightAreas,
-            content: props.selectedText,
-          };
+    renderHighlightTarget: (props) => {
+      const pageIndex = props.highlightAreas[0]?.pageIndex ?? 0;
+      const singleWord = isSingleWord(props.selectedText);
 
-          socket?.emit('sendHighlight', highlightData);
-          
-          // Add the currently user's highlight locally immediately for better UX
-          setHighlights((current) => [...current, highlightData as unknown as Highlight]);
-          props.toggle();
-        }}
-      >
-        Subrayar
-      </button>
-    ),
+      const handleUnderline = () => {
+        const highlightData = {
+          roomId,
+          page: pageIndex,
+          coords: props.highlightAreas,
+          content: props.selectedText,
+        };
+        socket?.emit('sendHighlight', highlightData);
+        setHighlights((current) => [...current, highlightData as unknown as Highlight]);
+        props.toggle();
+      };
+
+      const handleGlossary = () => {
+        const glossaryData = {
+          roomId,
+          page: pageIndex,
+          coords: props.highlightAreas,
+          content: props.selectedText,
+          type: 'glossary',
+        };
+        socket?.emit('addWord', { roomId, term: props.selectedText, page: pageIndex, coords: props.highlightAreas });
+        // Optimistic update — show blue overlay immediately without waiting for server roundtrip
+        setHighlights((current) => [...current, glossaryData as unknown as Highlight]);
+        props.toggle();
+      };
+
+      return (
+        <div
+          style={{
+            position: 'absolute',
+            left: `${props.selectionRegion.left}%`,
+            top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
+            zIndex: 10,
+            display: 'flex',
+            gap: '4px',
+          }}
+        >
+          <button
+            className="bg-yellow-400 text-black px-2 py-1 rounded shadow-lg text-sm font-bold hover:bg-yellow-300 transition-colors"
+            onClick={handleUnderline}
+          >
+            {t.underline}
+          </button>
+          {singleWord && (
+            <button
+              className="bg-blue-600 text-white px-2 py-1 rounded shadow-lg text-sm font-bold hover:bg-blue-500 transition-colors"
+              onClick={handleGlossary}
+            >
+              {t.glossary}
+            </button>
+          )}
+        </div>
+      );
+    },
   });
 
   return (
