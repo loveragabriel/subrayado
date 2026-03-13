@@ -9,7 +9,7 @@ import { Server, Socket } from 'socket.io';
 import { RoomsService } from './rooms.service';
 
 @WebSocketGateway({
-  cors: { origin: '*' },
+  cors: { origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000' },
 })
 export class RoomsGateway {
   @WebSocketServer()
