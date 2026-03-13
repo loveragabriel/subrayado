@@ -4,6 +4,30 @@ import { CreateRoomDto } from './dto/create-room.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma, Room } from '@prisma/client';
 
+const PIN_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; // 36 chars
+const PIN_LENGTH = 8;
+// 36 * 7 = 252 — bytes 0-251 map uniformly (7 values per char); 252-255 discarded
+const PIN_MAX_BYTE = 252;
+
+/**
+ * Generates a cryptographically secure PIN of exactly PIN_LENGTH uppercase
+ * alphanumeric characters (A-Z, 0-9) using rejection sampling to avoid
+ * modulo bias.
+ */
+export function generatePin(): string {
+  let pin = '';
+  while (pin.length < PIN_LENGTH) {
+    // Request extra bytes so the loop almost never iterates more than once
+    const buf = randomBytes((PIN_LENGTH - pin.length) * 2);
+    for (let i = 0; i < buf.length && pin.length < PIN_LENGTH; i++) {
+      if (buf[i] < PIN_MAX_BYTE) {
+        pin += PIN_ALPHABET[buf[i] % PIN_ALPHABET.length];
+      }
+    }
+  }
+  return pin;
+}
+
 @Injectable()
 export class RoomsService {
   constructor(private prisma: PrismaService) {}
@@ -48,7 +72,7 @@ export class RoomsService {
         title: createRoomDto.title,
         bookUrl: file.path,
         bookPublicId: file.filename,
-        accessPin: Math.random().toString(36).substring(2, 8).toUpperCase(),
+        accessPin: generatePin(),
         adminToken: randomBytes(32).toString('hex'),
         startDate: createRoomDto.startDate
           ? new Date(createRoomDto.startDate as string)
