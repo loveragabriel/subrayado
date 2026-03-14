@@ -86,14 +86,14 @@ export class RoomsService {
   async createHighlight(data: {
     roomId: string;
     page: number;
-    coords: Prisma.InputJsonValue;
+    coords: unknown;
     content?: string;
   }) {
     return this.prisma.highlight.create({
       data: {
         roomId: data.roomId,
         page: data.page,
-        coords: data.coords,
+        coords: data.coords as Prisma.InputJsonValue,
         content: data.content,
       },
     });
@@ -133,15 +133,16 @@ export class RoomsService {
     term: string;
     roomId: string;
     page: number;
-    coords: Prisma.InputJsonValue;
+    coords: unknown;
   }) {
+    const coordsJson = data.coords as Prisma.InputJsonValue;
     return this.prisma.$transaction(async (tempPrisma) => {
       const highlight = await tempPrisma.highlight.create({
         data: {
           content: data.term,
           type: 'glossary',
           page: data.page,
-          coords: data.coords,
+          coords: coordsJson,
           roomId: data.roomId,
         },
       });
@@ -149,7 +150,7 @@ export class RoomsService {
         data: {
           term: data.term,
           page: data.page,
-          coords: data.coords,
+          coords: coordsJson,
           roomId: data.roomId,
         },
       });

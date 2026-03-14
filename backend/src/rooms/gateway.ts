@@ -7,6 +7,8 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { RoomsService } from './rooms.service';
+import { SendHighlightDto } from './dto/send-highlight.dto';
+import { AddWordDto } from './dto/add-word.dto';
 
 @WebSocketGateway({
   cors: { origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000' },
@@ -38,8 +40,7 @@ export class RoomsGateway {
   // Looks for new highlights from users
   @SubscribeMessage('sendHighlight')
   async handleSendHighlight(
-    @MessageBody()
-    data: { roomId: string; page: number; coords: any; content?: string },
+    @MessageBody() data: SendHighlightDto,
     @ConnectedSocket() client: Socket,
   ) {
     try {
@@ -53,9 +54,8 @@ export class RoomsGateway {
 
   @SubscribeMessage('addWord')
   async handleAddWord(
-    @MessageBody() 
-    data: { roomId: string; term: string; page: number; coords: any },
-    @ConnectedSocket() client: Socket, 
+    @MessageBody() data: AddWordDto,
+    @ConnectedSocket() client: Socket,
   ) {
     try {
       const newEntry = await this.roomService.addWordToGlossary(data);
