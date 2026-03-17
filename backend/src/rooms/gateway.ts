@@ -9,10 +9,10 @@ import { Server, Socket } from 'socket.io';
 import { RoomsService } from './rooms.service';
 import { SendHighlightDto } from './dto/send-highlight.dto';
 import { AddWordDto } from './dto/add-word.dto';
-import { WS_ERRORS } from './constants/ws-erros.constants';
+import { WS_ERRORS } from './constants/ws-errors.constants';
 
 @WebSocketGateway({
-  cors: { origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000' },
+  cors: { origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3001' },
 })
 export class RoomsGateway {
   @WebSocketServer()
