@@ -12,7 +12,7 @@ import { AddWordDto } from './dto/add-word.dto';
 import { WS_ERRORS } from './constants/ws-errors.constants';
 
 @WebSocketGateway({
-  cors: { origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3001' },
+  cors: { origin: process.env.ALLOWED_ORIGIN },
 })
 export class RoomsGateway {
   @WebSocketServer()
