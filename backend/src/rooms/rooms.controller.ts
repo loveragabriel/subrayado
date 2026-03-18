@@ -14,11 +14,18 @@ import { RoomsService } from './rooms.service';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { FileInterceptor } from '@nestjs/platform-express/multer/interceptors/file.interceptor';
 import { cloudinaryStorage } from 'src/config/cloudinary/config';
+import { Throttle } from '@nestjs/throttler';
 @Controller('rooms')
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 
   @Post()
+  @Throttle({
+    default: {
+      ttl: parseInt(process.env.THROTTLE_TTL ?? '60000', 10),
+      limit: parseInt(process.env.THROTTLE_ROOMS_LIMIT ?? '5', 10),
+    },
+  })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: cloudinaryStorage,

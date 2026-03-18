@@ -57,16 +57,17 @@ export default function RoomPage() {
   const params = useParams()
   const searchParams = useSearchParams()
   const lang = (searchParams.get('lang') === 'en' ? 'en' : 'es') as 'es' | 'en'
-  const adminToken = searchParams.get('adminToken')
-
   const [room, setRoom] = useState<Room | null>(null)
   const [socket, setSocket] = useState<Socket | null>(null)
   const [glossaryEntries, setGlossaryEntries] = useState<Highlight[]>([])
   const [isGlossaryOpen, setIsGlossaryOpen] = useState(false)
   const [isSummaryOpen, setIsSummaryOpen] = useState(false)
 
+  const [adminToken] = useState<string | null>(() => typeof window !== 'undefined' ? localStorage.getItem(`adminToken.setItem${params.id}`) : null)
+
   const t = roomCopy[lang]
 
+  //UseEffect Socket
   useEffect(() => {
     const fetchRoom = async () => {
       try {
@@ -85,7 +86,7 @@ export default function RoomPage() {
   useEffect(() => {
     if (!params.id) return
 
-    const newSocket = io('http://localhost:3000', { transports: ['websocket'] })
+    const newSocket = io('http://localhost:3000', { transports: ['websocket'], auth: { adminToken} })
 
     newSocket.on('connect', () => {
       console.log('🔌 Socket conectado')
@@ -99,7 +100,7 @@ export default function RoomPage() {
     setSocket(newSocket)
 
     return () => { newSocket.disconnect() }
-  }, [params.id])
+  }, [params.id, adminToken])
 
   if (!room) return <div className="p-10 text-center">{t.loading}</div>
 

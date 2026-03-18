@@ -17,8 +17,27 @@ import { WS_ERRORS } from './constants/ws-errors.constants';
 export class RoomsGateway {
   @WebSocketServer()
   server: Server;
+  private readonly rateLimits = new Map<
+    string,
+    { count: number; resetAt: number }
+  >();
 
   constructor(private roomService: RoomsService) {}
+
+  private checkRateLimit(socketId: string, limit: number): boolean {
+    const now = Date.now();
+    const entry = this.rateLimits.get(socketId);
+
+    if (!entry || now > entry.resetAt) {
+      this.rateLimits.set(socketId, { count: 1, resetAt: now + 60000 });
+      return true;
+    }
+
+    if (entry.count >= limit) return false;
+
+    entry.count++;
+    return true;
+  }
 
   // Check with a user connects
   @SubscribeMessage('joinRoom')
@@ -31,7 +50,7 @@ export class RoomsGateway {
       client.emit('error', WS_ERRORS.ROOM_NOT_FOUND);
       return;
     }
-     // Count the number of users connected to the room
+    // Count the number of users connected to the room
     const userConnectes = await this.server.in(roomId).fetchSockets();
 
     // If there are more than 20 users, send an error message to the client
@@ -49,6 +68,16 @@ export class RoomsGateway {
     @MessageBody() data: SendHighlightDto,
     @ConnectedSocket() client: Socket,
   ) {
+    // Check rate limit
+    if (
+      !this.checkRateLimit(
+        client.id,
+        parseInt(process.env.THROTTLE_HIGHLIGHT_LIMIT || '30'),
+      )
+    ) {
+      client.emit('error', WS_ERRORS.RATE_LIMIT_EXCEEDED);
+      return;
+    }
     const room = await this.roomService.findOne(data.roomId);
     if (!room) {
       client.emit('error', WS_ERRORS.ROOM_NOT_FOUND);
@@ -68,6 +97,16 @@ export class RoomsGateway {
     @MessageBody() data: AddWordDto,
     @ConnectedSocket() client: Socket,
   ) {
+    //Check rate limit
+    if (
+      !this.checkRateLimit(
+        client.id,
+        parseInt(process.env.THROTTLE_WORD_LIMIT || '20'),
+      )
+    ) {
+      client.emit('error', WS_ERRORS.RATE_LIMIT_EXCEEDED);
+      return;
+    }
     const room = await this.roomService.findOne(data.roomId);
     if (!room) {
       client.emit('error', WS_ERRORS.ROOM_NOT_FOUND);
