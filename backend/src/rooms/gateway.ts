@@ -71,8 +71,9 @@ export class RoomsGateway {
       client.data.isAdmin = false;
     }
 
-    // If everything is ok, join the room
+    // If everything is ok, join the room and inform is the user is admin
     await client.join(roomId);
+    client.emit('joinedRoom', { isAdmin: client.data.isAdmin });
   }
 
   // Looks for new highlights from users
