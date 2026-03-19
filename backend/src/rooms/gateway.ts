@@ -5,11 +5,15 @@ import {
   ConnectedSocket,
   WebSocketServer,
 } from '@nestjs/websockets';
+
 import { Server, Socket } from 'socket.io';
 import { RoomsService } from './rooms.service';
 import { SendHighlightDto } from './dto/send-highlight.dto';
 import { AddWordDto } from './dto/add-word.dto';
 import { WS_ERRORS } from './constants/ws-errors.constants';
+interface SocketData {
+  isAdmin: boolean;
+}
 
 @WebSocketGateway({
   cors: { origin: process.env.ALLOWED_ORIGIN },
@@ -43,7 +47,7 @@ export class RoomsGateway {
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(
     @MessageBody() roomId: string,
-    @ConnectedSocket() client: Socket,
+    @ConnectedSocket() client: Socket<any, any, any, SocketData>,
   ) {
     const room = await this.roomService.findOne(roomId);
     if (!room) {
@@ -58,6 +62,15 @@ export class RoomsGateway {
       client.emit('error', WS_ERRORS.ROOM_FULL);
       return;
     }
+
+    const clientToken = (client.handshake.auth as { adminToken?: string })
+      ?.adminToken;
+    if (clientToken && clientToken === room.adminToken) {
+      client.data.isAdmin = true;
+    } else {
+      client.data.isAdmin = false;
+    }
+
     // If everything is ok, join the room
     await client.join(roomId);
   }

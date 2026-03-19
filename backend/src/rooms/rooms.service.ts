@@ -157,4 +157,12 @@ export class RoomsService {
       return highlight;
     });
   }
+
+  async findByAdminToken(adminToken: string): Promise<Room | null> {
+    if (!adminToken) return null;
+
+    return this.prisma.room.findUnique({
+      where: { adminToken },
+    });
+  }
 }
