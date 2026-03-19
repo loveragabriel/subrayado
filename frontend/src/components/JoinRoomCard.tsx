@@ -34,7 +34,7 @@ export default function JoinRoomCard({ lang, onJoin }: Props) {
     if (pin.length < 6) return setError(t.errPinLength)
 
     try {
-      const response = await fetch(`http://localhost:3000/rooms/join/${pin.toUpperCase()}`)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms/join/${pin.toUpperCase()}`)
       if (!response.ok) throw new Error()
       const room = await response.json()
       onJoin(room.id)

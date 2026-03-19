@@ -63,7 +63,7 @@ export default function RoomPage() {
   const [isGlossaryOpen, setIsGlossaryOpen] = useState(false)
   const [isSummaryOpen, setIsSummaryOpen] = useState(false)
 
-  const [adminToken] = useState<string | null>(() => typeof window !== 'undefined' ? localStorage.getItem(`adminToken.setItem${params.id}`) : null)
+  const [adminToken] = useState<string | null>(() => typeof window !== 'undefined' ? localStorage.getItem(`adminToken:${params.id}`) : null)
 
   const t = roomCopy[lang]
 
@@ -71,7 +71,7 @@ export default function RoomPage() {
   useEffect(() => {
     const fetchRoom = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/rooms/${params.id}`)
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms/${params.id}`)
         if (!response.ok) return
         const data: Room = await response.json()
         setRoom(data)
@@ -86,7 +86,7 @@ export default function RoomPage() {
   useEffect(() => {
     if (!params.id) return
 
-    const newSocket = io('http://localhost:3000', { transports: ['websocket'], auth: { adminToken} })
+    const newSocket = io(`${process.env.NEXT_PUBLIC_API_URL}`, { transports: ['websocket'], auth: { adminToken} })
 
     newSocket.on('connect', () => {
       console.log('🔌 Socket conectado')

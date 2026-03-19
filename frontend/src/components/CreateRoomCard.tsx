@@ -90,13 +90,14 @@ export default function CreateRoomCard({ lang, onSuccess }: Props) {
     if (endDate) formData.append('endDate', endDate)
 
     try {
-      const response = await fetch('http://localhost:3000/rooms', { method: 'POST', body: formData })
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms`, { method: 'POST', body: formData })
       if (!response.ok) {
         const data = await response.json()
         throw new Error(data.message || 'Error al crear sala')
       }
       const newRoom = await response.json()
       if (!newRoom?.id) return setError(t.errServer)
+        localStorage.setItem(`adminToken:${newRoom.id}`, newRoom.adminToken);
       onSuccess(newRoom)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error desconocido.')
