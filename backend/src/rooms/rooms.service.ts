@@ -121,14 +121,6 @@ export class RoomsService {
     });
   }
 
-  update(id: string, updateRoomDto: any) {
-    return `This action updates a #${id} room`;
-  }
-
-  remove(id: string) {
-    return `This action removes a #${id} room`;
-  }
-
   async addWordToGlossary(data: {
     term: string;
     roomId: string;

@@ -6,14 +6,14 @@ const copy = {
     title: 'Unirse a Sala',
     desc: '¿Tienes un código? Introdúcelo para empezar.',
     joinBtn: 'Entrar a la Sala',
-    errPinLength: 'El PIN debe tener 6 caracteres.',
+    errPinLength: 'El PIN debe tener 8 caracteres.',
     errNotFound: 'PIN inválido o sala inexistente.',
   },
   en: {
     title: 'Join Room',
     desc: 'Have a code? Enter it to get started.',
     joinBtn: 'Enter Room',
-    errPinLength: 'PIN must be 6 characters.',
+    errPinLength: 'PIN must be 8 characters.',
     errNotFound: 'Invalid PIN or room not found.',
   },
 }
@@ -31,7 +31,7 @@ export default function JoinRoomCard({ lang, onJoin }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (pin.length < 6) return setError(t.errPinLength)
+    if (pin.length < 8) return setError(t.errPinLength)
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms/join/${pin.toUpperCase()}`)
@@ -54,8 +54,8 @@ export default function JoinRoomCard({ lang, onJoin }: Props) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
-          placeholder="Ej: R73EMU"
-          maxLength={6}
+          placeholder="Ej: R73EMU12"
+          maxLength={8}
           className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-center font-mono text-xl uppercase text-black"
           onChange={(e) => { setError(null); setPin(e.target.value) }}
         />

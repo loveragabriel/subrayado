@@ -1,63 +1,151 @@
 # Subrayado
 
-Web app designed to make books clubs more dynamic by encouraging structure participaction, discussion tracking, and collaborative reading experiences.
+Collaborative PDF reading app for book clubs. Create a room, upload a PDF, share a PIN, and see each other's highlights in real time.
 
-## Key Features
+## Features
 
-- **PIN-Protected Rooms**: Create a private session by uploading a PDF and generating a unique access code to share.
-- **Real-Time Synchronization**: See other users 'highlights instantly as they happen, powered by WebSockets.
-- **Persistent Data**: Highlights are stored in PostgreSQL database via Prisma, in order to remain available after refresing.
-- **Professional PDF Viewer**: @react-pdf-viewer for PDFs
+- **Room-based sessions** — Upload a PDF or ePub, get a 6-character PIN to share with your group (up to 20 concurrent users per room).
+- **Real-time highlights** — See other members' highlights appear instantly via WebSockets.
+- **Glossary** — Mark words as glossary entries; a shared sidebar collects all terms with quick dictionary links.
+- **Persistent storage** — Highlights and glossary entries are saved in PostgreSQL. They survive page refreshes and reconnections.
+- **Bilingual UI** — Switch between Spanish and English from the home page.
+- **Admin recovery** — Room creator receives a secure admin link to reclaim coordinator privileges.
+- **Reading schedule** — Optional start/end dates to keep the club on track.
 
 ## Tech Stack
 
-- **Frontend**:
-  - Framework: Next.js 14( App Router)
-  - Styling Tailwind CSS
-  - Real-time: Socket.oi-client
-  - PDF Engine.js & React-PDF-Viewer
-- **Backend**:
-  - Framework: Nest.JS
-  - ORM: Prisma
-  - Database: PostgreSQL
-  - Real-time: Socket.io (WebSockets)
-  - File Storage: Claudinary API
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS 4 |
+| PDF rendering | pdfjs-dist 3.4, @react-pdf-viewer 3.12 |
+| Backend | NestJS 11, TypeScript 5.7 |
+| Database | PostgreSQL 15, Prisma ORM 6 |
+| Real-time | Socket.IO 4.8 (WebSocket transport) |
+| File storage | Cloudinary (PDFs and ePubs) |
+| Rate limiting | @nestjs/throttler (REST + WebSocket) |
 
-## 📋 Prerequisites
+## Architecture
 
-Before you begin, ensure you have the following installed:
+```
+subrayado/
+├── backend/          # NestJS REST API + Socket.IO gateway (port 3000)
+│   ├── src/
+│   │   ├── rooms/    # Controller, service, gateway, DTOs
+│   │   ├── prisma/   # PrismaService singleton
+│   │   └── config/   # Cloudinary + Multer configuration
+│   └── prisma/
+│       └── schema.prisma   # Room, User, Highlight, Glossary models
+├── frontend/         # Next.js client (port 3001)
+│   └── src/
+│       ├── app/      # Pages: home, room/[id]
+│       └── components/  # PdfViewer, GlossarySidebar, SummaryPanel
+└── docker-compose.yml
+```
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [Git](https://git-scm.com/)
+## Prerequisites
 
-## 🐳 Quick Start with Docker
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (recommended)
+- Or: [Node.js](https://nodejs.org/) 18+, [PostgreSQL](https://www.postgresql.org/) 15+
 
-1. **Clone and Enter:**
-   ```bash
-   git clone [https://github.com/loveragabriel/subrayado.git](https://github.com/loveragabriel/subrayado.git)
-   cd subrayado
-   ```
+## Quick Start (Docker)
 
-````
+**1. Clone the repo:**
 
-2. Enviroment Variables:
-Create a .env file in the root with your Cloudinary credentials.
-``` Code snippet
+```bash
+git clone https://github.com/loveragabriel/subrayado.git
+cd subrayado
+```
+
+**2. Create a `.env` file in the project root:**
+
+```env
 DATABASE_URL="postgresql://postgres:password@db:5432/subrayado"
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
-````
+ALLOWED_ORIGIN=http://localhost:3001
+```
 
-3. Lauch:
+**3. Build and start:**
 
-```Bash
+```bash
 docker-compose up --build
 ```
 
-4. Initialize Database (Fisrt rie only)
+**4. Initialize the database (first run only):**
+
 ```bash
 docker-compose exec backend npx prisma migrate dev
 ```
 
-The app will be available at "hhtp://localhost:3001" (Frontend) and "http://localhost:3000" (Backend)
+The app will be available at:
+- **Frontend:** http://localhost:3001
+- **Backend API:** http://localhost:3000
+
+## Local Development (without Docker)
+
+**Backend:**
+
+```bash
+cd backend
+cp .env.example .env          # Fill in your credentials
+npm install
+npx prisma migrate dev        # Apply migrations
+npm run start:dev             # Starts on port 3000 with hot reload
+```
+
+**Frontend:**
+
+```bash
+cd frontend
+npm install
+npm run dev                   # Starts on port 3001
+```
+
+## Useful Commands
+
+| Command | Location | Description |
+|---------|----------|-------------|
+| `npm run start:dev` | backend/ | Dev server with hot reload |
+| `npm run build` | backend/ | Compile TypeScript |
+| `npm run start:prod` | backend/ | Run compiled output |
+| `npm run lint` | backend/ | ESLint with auto-fix |
+| `npm run test` | backend/ | Jest unit tests |
+| `npm run dev` | frontend/ | Next.js dev server |
+| `npm run build` | frontend/ | Production build |
+| `npx prisma studio` | backend/ | Visual database browser |
+| `npx prisma migrate dev` | backend/ | Apply pending migrations |
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `CLOUDINARY_CLOUD_NAME` | Yes | Cloudinary account name |
+| `CLOUDINARY_API_KEY` | Yes | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Yes | Cloudinary API secret |
+| `ALLOWED_ORIGIN` | Yes | Frontend URL for CORS (e.g. `http://localhost:3001`) |
+| `PORT` | No | Backend port (default: `3000`) |
+| `NEXT_PUBLIC_API_URL` | No | Backend URL for frontend (default: `http://localhost:3000`) |
+| `THROTTLE_TTL` | No | Rate limit window in ms |
+| `THROTTLE_LIMIT` | No | Max requests per window |
+
+## Data Models
+
+- **Room** — Title, book URL, access PIN, admin token, optional reading schedule
+- **User** — Username, email
+- **RoomMember** — Join table linking users to rooms
+- **Highlight** — Page number, text content, coordinates (JSON), type (`underline` | `glossary`)
+- **Glossary** — Term, page number, coordinates, linked to room
+
+## How It Works
+
+1. A coordinator creates a room by uploading a PDF/ePub and setting a title.
+2. The app generates a **6-character PIN** and a **secure admin token**.
+3. Members join by entering the PIN on the home page.
+4. Everyone connects to the same Socket.IO room. Text selections emit highlights that appear on all clients in real time.
+5. Glossary entries can be added and shared across the group via a sidebar panel.
+
+## License
+
+UNLICENSED
