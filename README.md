@@ -4,12 +4,12 @@ Collaborative PDF reading app for book clubs. Create a room, upload a PDF, share
 
 ## Features
 
-- **Room-based sessions** — Upload a PDF or ePub, get a 6-character PIN to share with your group (up to 20 concurrent users per room).
+- **Room-based sessions** — Upload a PDF or ePub, get an 8-character PIN to share with your group (up to 20 concurrent users per room).
 - **Real-time highlights** — See other members' highlights appear instantly via WebSockets.
 - **Glossary** — Mark words as glossary entries; a shared sidebar collects all terms with quick dictionary links.
 - **Persistent storage** — Highlights and glossary entries are saved in PostgreSQL. They survive page refreshes and reconnections.
 - **Bilingual UI** — Switch between Spanish and English from the home page.
-- **Admin recovery** — Room creator receives a secure admin link to reclaim coordinator privileges.
+- **Admin access** — Room creator receives a secure admin token stored in localStorage. Passed via Socket.IO auth handshake to identify coordinator privileges.
 - **Reading schedule** — Optional start/end dates to keep the club on track.
 
 ## Tech Stack
@@ -72,12 +72,6 @@ ALLOWED_ORIGIN=http://localhost:3001
 docker-compose up --build
 ```
 
-**4. Initialize the database (first run only):**
-
-```bash
-docker-compose exec backend npx prisma migrate dev
-```
-
 The app will be available at:
 - **Frontend:** http://localhost:3001
 - **Backend API:** http://localhost:3000
@@ -126,9 +120,12 @@ npm run dev                   # Starts on port 3001
 | `CLOUDINARY_API_SECRET` | Yes | Cloudinary API secret |
 | `ALLOWED_ORIGIN` | Yes | Frontend URL for CORS (e.g. `http://localhost:3001`) |
 | `PORT` | No | Backend port (default: `3000`) |
-| `NEXT_PUBLIC_API_URL` | No | Backend URL for frontend (default: `http://localhost:3000`) |
+| `NEXT_PUBLIC_API_URL` | Yes | Backend URL for frontend (default: `http://localhost:3000`) |
 | `THROTTLE_TTL` | No | Rate limit window in ms |
 | `THROTTLE_LIMIT` | No | Max requests per window |
+| `THROTTLE_ROOMS_LIMIT` | No | Max room creations per window (default: `5`) |
+| `THROTTLE_HIGHLIGHT_LIMIT` | No | Max highlights per minute per socket (default: `30`) |
+| `THROTTLE_WORD_LIMIT` | No | Max glossary words per minute per socket (default: `20`) |
 
 ## Data Models
 
@@ -141,7 +138,7 @@ npm run dev                   # Starts on port 3001
 ## How It Works
 
 1. A coordinator creates a room by uploading a PDF/ePub and setting a title.
-2. The app generates a **6-character PIN** and a **secure admin token**.
+2. The app generates an **8-character PIN** and a **secure admin token**.
 3. Members join by entering the PIN on the home page.
 4. Everyone connects to the same Socket.IO room. Text selections emit highlights that appear on all clients in real time.
 5. Glossary entries can be added and shared across the group via a sidebar panel.
