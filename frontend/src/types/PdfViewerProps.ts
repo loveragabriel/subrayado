@@ -1,4 +1,5 @@
 import { Socket } from 'socket.io-client';
+import { Highlight } from './highlights';
 
 export interface PdfViewerProps {
   fileUrl: string;
