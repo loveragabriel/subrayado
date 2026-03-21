@@ -94,12 +94,23 @@ export class RoomsService {
     });
   }
 
-  async findByPin(pin: string): Promise<Room | null> {
+  async findByPin(pin: string): Promise<Omit<Room, 'adminToken'> & { highlights: any[] } | null> {
     return this.prisma.room.findUnique({
       where: {
         accessPin: pin.toUpperCase(),
       },
-      include: { highlights: true },
+      select: {
+        id: true,
+        title: true,
+        accessPin: true,
+        bookUrl: true,
+        bookPublicId: true,
+        startDate: true,
+        endDate: true,
+        createdAt: true,
+        updatedAt: true,
+        highlights: true,
+      },
     });
   }
 
