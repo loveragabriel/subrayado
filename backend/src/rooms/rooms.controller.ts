@@ -9,7 +9,6 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
-import { UpdateRoomDto } from './dto/update-room.dto';
 import { FileInterceptor } from '@nestjs/platform-express/multer/interceptors/file.interceptor';
 import { cloudinaryStorage } from 'src/config/cloudinary/config';
 import { Throttle } from '@nestjs/throttler';
@@ -60,7 +59,6 @@ export class RoomsController {
   @Get('join/:pin')
   async joinRoom(@Param('pin') pin: string) {
     const room = await this.roomsService.findByPin(pin);
-    console.log('Buscando sala con PIN:', pin);
     if (!room) {
       throw new NotFoundException(`La sala con el pin ${pin} no existe`);
     }

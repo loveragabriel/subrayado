@@ -117,7 +117,18 @@ export class RoomsService {
   async findOne(id: string) {
     return this.prisma.room.findUnique({
       where: { id },
-      include: { highlights: true },
+      select: {
+        id: true,
+        title: true,
+        accessPin: true,
+        bookUrl: true,
+        bookPublicId: true,
+        createdAt: true,
+        updatedAt: true,
+        highlights: true,
+        members: true,
+        glossaries: true,
+      },
     });
   }
 
