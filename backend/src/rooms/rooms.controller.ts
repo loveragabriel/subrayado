@@ -31,10 +31,7 @@ export class RoomsController {
       limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
       fileFilter: (_req, file, callback) => {
         if (!file.originalname.match(/\.(pdf|epub)$/i)) {
-          return callback(
-            new Error(REST_ERRORS.INVALID_FILE_FORMAT),
-            false,
-          );
+          return callback(new Error(REST_ERRORS.INVALID_FILE_FORMAT), false);
         }
         callback(null, true);
       },
