@@ -99,12 +99,6 @@ export class RoomsService {
     });
   }
 
-  async findAll() {
-    return this.prisma.room.findMany({
-      include: { highlights: true },
-    });
-  }
-
   async findByPin(pin: string): Promise<Room | null> {
     return this.prisma.room.findUnique({
       where: {

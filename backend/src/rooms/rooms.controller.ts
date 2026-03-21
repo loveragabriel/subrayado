@@ -65,11 +65,6 @@ export class RoomsController {
     return room;
   }
 
-  @Get()
-  findAll() {
-    return this.roomsService.findAll();
-  }
-
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.roomsService.findOne(id);
