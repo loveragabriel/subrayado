@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma, Room } from '@prisma/client';
+import { REST_ERRORS } from './constants/rest-errors.constants';
 
 const PIN_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; // 36 chars
 const PIN_LENGTH = 8;
@@ -42,29 +43,23 @@ export class RoomsService {
     if (createRoomDto.startDate) {
       const startStr = (createRoomDto.startDate as string).slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(startStr)) {
-        throw new BadRequestException('La fecha de inicio no es válida.');
+        throw new BadRequestException(REST_ERRORS.INVALID_START_DATE);
       }
       if (startStr < todayStr) {
-        throw new BadRequestException(
-          'La fecha de inicio no puede ser anterior a hoy.',
-        );
+        throw new BadRequestException(REST_ERRORS.START_DATE_IN_PAST);
       }
 
       if (createRoomDto.endDate) {
         const endStr = (createRoomDto.endDate as string).slice(0, 10);
         if (!/^\d{4}-\d{2}-\d{2}$/.test(endStr)) {
-          throw new BadRequestException('La fecha de cierre no es válida.');
+          throw new BadRequestException(REST_ERRORS.INVALID_END_DATE);
         }
         if (endStr <= startStr) {
-          throw new BadRequestException(
-            'La fecha de cierre debe ser posterior a la fecha de inicio.',
-          );
+          throw new BadRequestException(REST_ERRORS.END_DATE_BEFORE_START);
         }
       }
     } else if (createRoomDto.endDate) {
-      throw new BadRequestException(
-        'No puedes definir una fecha de cierre sin una fecha de inicio.',
-      );
+      throw new BadRequestException(REST_ERRORS.END_DATE_WITHOUT_START);
     }
 
     return this.prisma.room.create({

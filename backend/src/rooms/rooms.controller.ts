@@ -13,6 +13,7 @@ import { FileInterceptor } from '@nestjs/platform-express/multer/interceptors/fi
 import { cloudinaryStorage } from 'src/config/cloudinary/config';
 import { Throttle } from '@nestjs/throttler';
 import { CreateRoomDto } from './dto/create-room.dto';
+import { REST_ERRORS } from './constants/rest-errors.constants';
 @Controller('rooms')
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
@@ -31,7 +32,7 @@ export class RoomsController {
       fileFilter: (_req, file, callback) => {
         if (!file.originalname.match(/\.(pdf|epub)$/i)) {
           return callback(
-            new Error('Solo se permiten archivos PDF o ePub'),
+            new Error(REST_ERRORS.INVALID_FILE_FORMAT),
             false,
           );
         }
@@ -44,9 +45,7 @@ export class RoomsController {
     @Body() body: CreateRoomDto,
   ) {
     if (!file) {
-      throw new NotFoundException(
-        'No se ha subido ningún archivo o el formato es inválido',
-      );
+      throw new NotFoundException(REST_ERRORS.MISSING_FILE);
     }
     return this.roomsService.create(body, file);
   }
@@ -55,7 +54,7 @@ export class RoomsController {
   async joinRoom(@Param('pin') pin: string) {
     const room = await this.roomsService.findByPin(pin);
     if (!room) {
-      throw new NotFoundException(`La sala con el pin ${pin} no existe`);
+      throw new NotFoundException(`${REST_ERRORS.ROOM_NOT_FOUND} ${pin}`);
     }
     return room;
   }
