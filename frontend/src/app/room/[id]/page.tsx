@@ -76,8 +76,8 @@ export default function RoomPage() {
         const data: Room = await response.json()
         setRoom(data)
         setGlossaryEntries(data.highlights.filter((h) => h.type === 'glossary'))
-      } catch (err) {
-        console.error('Error cargando sala:', err)
+      } catch {
+        // Network error — room will remain null and UI shows loading state
       }
     }
     if (params.id) fetchRoom()
@@ -89,7 +89,6 @@ export default function RoomPage() {
     const newSocket = io(`${process.env.NEXT_PUBLIC_API_URL}`, { transports: ['websocket'], auth: { adminToken} })
 
     newSocket.on('connect', () => {
-      console.log('🔌 Socket conectado')
       newSocket.emit('joinRoom', params.id)
     })
 
