@@ -12,6 +12,7 @@ import { RoomsService } from './rooms.service';
 import { FileInterceptor } from '@nestjs/platform-express/multer/interceptors/file.interceptor';
 import { cloudinaryStorage } from 'src/config/cloudinary/config';
 import { Throttle } from '@nestjs/throttler';
+import { CreateRoomDto } from './dto/create-room.dto';
 @Controller('rooms')
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
@@ -40,20 +41,14 @@ export class RoomsController {
   )
   async create(
     @UploadedFile() file: Express.Multer.File,
-    @Body('title') title: string,
-    @Body('startDate') startDate?: string,
-    @Body('endDate') endDate?: string,
+    @Body() body: CreateRoomDto,
   ) {
     if (!file) {
       throw new NotFoundException(
         'No se ha subido ningún archivo o el formato es inválido',
       );
     }
-    const multerFile = file as Express.Multer.File & { path: string };
-    return this.roomsService.create(
-      { title, bookUrl: multerFile.path, startDate, endDate },
-      file,
-    );
+    return this.roomsService.create(body, file);
   }
 
   @Get('join/:pin')
