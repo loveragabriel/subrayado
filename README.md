@@ -9,6 +9,7 @@ Collaborative PDF reading app for book clubs. Create a room, upload a PDF, share
 - **Glossary** — Mark words as glossary entries; a shared sidebar collects all terms with quick dictionary links.
 - **Persistent storage** — Highlights and glossary entries are saved in PostgreSQL. They survive page refreshes and reconnections.
 - **Bilingual UI** — Switch between Spanish and English from the home page.
+- **Email verification** — Room coordinators verify their email via a magic link before the room is activated.
 - **Admin access** — Room creator receives a secure admin token stored in localStorage. Passed via Socket.IO auth handshake to identify coordinator privileges.
 - **Reading schedule** — Optional start/end dates to keep the club on track.
 
@@ -31,10 +32,11 @@ subrayado/
 ├── backend/          # NestJS REST API + Socket.IO gateway (port 3000)
 │   ├── src/
 │   │   ├── rooms/    # Controller, service, gateway, DTOs
+│   │   ├── email/    # MailModule + MailService (Nodemailer/Gmail)
 │   │   ├── prisma/   # PrismaService singleton
 │   │   └── config/   # Cloudinary + Multer configuration
 │   └── prisma/
-│       └── schema.prisma   # Room, User, Highlight, Glossary models
+│       └── schema.prisma   # Room, User, Highlight, Glossary, MagicToken models
 ├── frontend/         # Next.js client (port 3001)
 │   └── src/
 │       ├── app/      # Pages: home, room/[id]
@@ -59,11 +61,18 @@ cd subrayado
 **2. Create a `.env` file in the project root:**
 
 ```env
-DATABASE_URL="postgresql://postgres:password@db:5432/subrayado"
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=subrayado
+DATABASE_URL=postgresql://postgres:postgres@db:5432/subrayado
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ALLOWED_ORIGIN=http://localhost:3001
+NEXT_PUBLIC_API_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:3001
+GMAIL_USER=your_gmail@gmail.com
+GMAIL_APP_PASSWORD=your_app_password
 ```
 
 **3. Build and start:**
@@ -119,9 +128,12 @@ npm run dev                   # Starts on port 3001
 | `CLOUDINARY_API_KEY` | Yes | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Yes | Cloudinary API secret |
 | `ALLOWED_ORIGIN` | Yes | Frontend URL for CORS (e.g. `http://localhost:3001`) |
+| `FRONTEND_URL` | Yes | Frontend base URL used to build magic link emails (e.g. `http://localhost:3001`) |
+| `GMAIL_USER` | Yes | Gmail address used to send magic link emails |
+| `GMAIL_APP_PASSWORD` | Yes | Gmail App Password (16-char, generated in Google Account → Security → App passwords) |
 | `PORT` | No | Backend port (default: `3000`) |
 | `NEXT_PUBLIC_API_URL` | Yes | Backend URL for frontend (default: `http://localhost:3000`) |
-| `THROTTLE_LIMIT` | No | Max requests per window |
+| `THROTTLE_TTL` | No | Rate limit window in ms (default: `60000`) |
 | `THROTTLE_ROOMS_LIMIT` | No | Max room creations per window (default: `5`) |
 | `THROTTLE_HIGHLIGHT_LIMIT` | No | Max highlights per minute per socket (default: `30`) |
 | `THROTTLE_WORD_LIMIT` | No | Max glossary words per minute per socket (default: `20`) |
@@ -136,11 +148,12 @@ npm run dev                   # Starts on port 3001
 
 ## How It Works
 
-1. A coordinator creates a room by uploading a PDF/ePub and setting a title.
-2. The app generates an **8-character PIN** and a **secure admin token**.
-3. Members join by entering the PIN on the home page.
-4. Everyone connects to the same Socket.IO room. Text selections emit highlights that appear on all clients in real time.
-5. Glossary entries can be added and shared across the group via a sidebar panel.
+1. A coordinator creates a room, uploads a PDF/ePub, and enters their email.
+2. A magic link is sent to their email. Clicking it activates the room and grants admin access.
+3. The app reveals the **8-character PIN** to share with readers.
+4. Members join by entering the PIN on the home page.
+5. Everyone connects to the same Socket.IO room. Text selections emit highlights that appear on all clients in real time.
+6. Glossary entries can be added and shared across the group via a sidebar panel.
 
 ## License
 
