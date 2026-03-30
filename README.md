@@ -71,8 +71,8 @@ CLOUDINARY_API_SECRET=your_api_secret
 ALLOWED_ORIGIN=http://localhost:3001
 NEXT_PUBLIC_API_URL=http://localhost:3000
 FRONTEND_URL=http://localhost:3001
-GMAIL_USER=your_gmail@gmail.com
-GMAIL_APP_PASSWORD=your_app_password
+SENDGRID_API_KEY=your_sendgrid_api_key
+SENDGRID_FROM_EMAIL=your_verified_sender@email.com
 ```
 
 **3. Build and start:**
@@ -129,8 +129,8 @@ npm run dev                   # Starts on port 3001
 | `CLOUDINARY_API_SECRET` | Yes | Cloudinary API secret |
 | `ALLOWED_ORIGIN` | Yes | Frontend URL for CORS (e.g. `http://localhost:3001`) |
 | `FRONTEND_URL` | Yes | Frontend base URL used to build magic link emails (e.g. `http://localhost:3001`) |
-| `GMAIL_USER` | Yes | Gmail address used to send magic link emails |
-| `GMAIL_APP_PASSWORD` | Yes | Gmail App Password (16-char, generated in Google Account → Security → App passwords) |
+| `SENDGRID_API_KEY` | Yes | SendGrid API key for sending magic link emails |
+| `SENDGRID_FROM_EMAIL` | Yes | Verified sender email address in your SendGrid account |
 | `PORT` | No | Backend port (default: `3000`) |
 | `NEXT_PUBLIC_API_URL` | Yes | Backend URL for frontend (default: `http://localhost:3000`) |
 | `THROTTLE_TTL` | No | Rate limit window in ms (default: `60000`) |

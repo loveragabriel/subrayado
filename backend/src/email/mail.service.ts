@@ -1,23 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import { SendMagicLinkDto } from 'src/email/dto/send-magic-link.dto';
 
 @Injectable()
-export class MailService {
+export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
-  private transporter: nodemailer.Transporter;
+  private fromEmail: string;
 
-  constructor(private readonly config: ConfigService) {
-    this.transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: this.config.getOrThrow<string>('GMAIL_USER'),
-        pass: this.config.getOrThrow<string>('GMAIL_APP_PASSWORD'),
-      },
-    });
+  constructor(private readonly config: ConfigService) {}
+
+  onModuleInit() {
+    sgMail.setApiKey(this.config.getOrThrow<string>('SENDGRID_API_KEY'));
+    this.fromEmail = this.config.getOrThrow<string>('SENDGRID_FROM_EMAIL');
   }
 
   async sendMagicLinkEmail(dto: SendMagicLinkDto): Promise<void> {
@@ -39,8 +34,8 @@ export class MailService {
            <p>Este link expira en 15 minutos.</p>`;
 
     try {
-      await this.transporter.sendMail({
-        from: `"Subrayado" <${this.config.getOrThrow<string>('GMAIL_USER')}>`,
+      await sgMail.send({
+        from: this.fromEmail,
         to: dto.email,
         subject,
         html,

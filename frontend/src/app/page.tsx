@@ -84,13 +84,13 @@ export default function Home() {
           </div>
         )}
       </main>
-      <footer className="py-8 px-6 text-center border-t border-slate-200">
-        <p className="text-sm text-slate-500 mb-2">
+      <footer className="fixed bottom-2.5 left-2.5 right-2.5 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 shadow-sm py-3 px-6 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-3 z-50">
+        <p className="text-sm text-slate-500 text-center">
           {lang === 'es'
             ? '¿Querés probar Subrayado? Usá este PIN de acceso:'
             : 'Want to try Subrayado? Use this access PIN:'}
         </p>
-        <span className="font-mono font-bold text-blue-700 text-2xl tracking-widest">
+        <span className="font-mono font-bold text-blue-700 text-xl tracking-widest">
           YQK51NKC
         </span>
       </footer>
