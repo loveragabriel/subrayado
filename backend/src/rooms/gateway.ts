@@ -54,6 +54,9 @@ export class RoomsGateway {
       client.emit('error', WS_ERRORS.ROOM_NOT_FOUND);
       return;
     }
+
+    const roomWithToken = await this.roomService.findOneWithToken(roomId);
+
     // Count the number of users connected to the room
     const userConnectes = await this.server.in(roomId).fetchSockets();
 
@@ -65,7 +68,7 @@ export class RoomsGateway {
 
     const clientToken = (client.handshake.auth as { adminToken?: string })
       ?.adminToken;
-    if (clientToken && clientToken === room.adminToken) {
+    if (clientToken && clientToken === roomWithToken?.adminToken) {
       client.data.isAdmin = true;
     } else {
       client.data.isAdmin = false;

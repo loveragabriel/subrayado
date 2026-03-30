@@ -1,5 +1,7 @@
 import {
   IsDateString,
+  IsEmail,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -9,6 +11,9 @@ export class CreateRoomDto {
   @IsNotEmpty()
   readonly title: string;
 
+  @IsEmail()
+  readonly coordinatorEmail: string;
+
   @IsOptional()
   @IsDateString()
   readonly startDate?: string;
@@ -16,4 +21,8 @@ export class CreateRoomDto {
   @IsOptional()
   @IsDateString()
   readonly endDate?: string;
+
+  @IsOptional()
+  @IsIn(['es', 'en'])
+  readonly lang?: 'es' | 'en';
 }

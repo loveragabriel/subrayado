@@ -121,7 +121,6 @@ npm run dev                   # Starts on port 3001
 | `ALLOWED_ORIGIN` | Yes | Frontend URL for CORS (e.g. `http://localhost:3001`) |
 | `PORT` | No | Backend port (default: `3000`) |
 | `NEXT_PUBLIC_API_URL` | Yes | Backend URL for frontend (default: `http://localhost:3000`) |
-| `THROTTLE_TTL` | No | Rate limit window in ms |
 | `THROTTLE_LIMIT` | No | Max requests per window |
 | `THROTTLE_ROOMS_LIMIT` | No | Max room creations per window (default: `5`) |
 | `THROTTLE_HIGHLIGHT_LIMIT` | No | Max highlights per minute per socket (default: `30`) |

@@ -7,6 +7,7 @@ import {
   NotFoundException,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { FileInterceptor } from '@nestjs/platform-express/multer/interceptors/file.interceptor';
@@ -54,6 +55,14 @@ export class RoomsController {
       throw new NotFoundException(`${REST_ERRORS.ROOM_NOT_FOUND} ${pin}`);
     }
     return room;
+  }
+
+  @Get('verify')
+  async verifyMagicToken(@Query('token') token: string) {
+    if (!token) {
+      throw new NotFoundException(REST_ERRORS.INVALID_TOKEN);
+    }
+    return this.roomsService.verifyMagicToken(token);
   }
 
   @Get(':id')

@@ -22,6 +22,9 @@ model Room {
   bookPublicId  String?
   accessPin     String      @unique
   adminToken    String?     @unique
+  coordinatorEmail String?
+  verified      Boolean @default(false)
+  magicToken    MagicToken?
   startDate     DateTime?
   endDate       DateTime?
   createdAt     DateTime    @default(now())
@@ -42,7 +45,7 @@ model RoomMember {
 
 model Highlight {
   id        Int      @id @default(autoincrement())
-  userId    String? //Just for MVP release
+  userId    String? 
   roomId    String
   page      Int
   content   String?
@@ -63,5 +66,17 @@ model Glossary {
   roomId    String
   //relations
   room      Room     @relation(fields: [roomId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model MagicToken {
+  id String @id @default(uuid())
+  email String
+  token String @unique
+  roomId String @unique
+  // relation
+  room Room @relation(fields: [roomId], references: [id])
+  expiresAt DateTime
+  used Boolean @default(false)
   createdAt DateTime @default(now())
 }

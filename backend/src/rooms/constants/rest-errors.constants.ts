@@ -9,4 +9,7 @@ export const REST_ERRORS = {
   INVALID_FILE_FORMAT: 'Solo se permiten archivos PDF o ePub',
   MISSING_FILE: 'No se ha subido ningún archivo o el formato es inválido',
   ROOM_NOT_FOUND: 'La sala con el pin no existe:',
+  INVALID_TOKEN: 'Token inválido o no encontrado.',
+  TOKEN_ALREADY_USED: 'Este link ya fue utilizado.',
+  TOKEN_EXPIRED: 'Este link ha expirado.',
 };
