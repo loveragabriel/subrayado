@@ -84,7 +84,16 @@ export default function Home() {
           </div>
         )}
       </main>
-
+      <footer className="py-8 px-6 text-center border-t border-slate-200">
+        <p className="text-sm text-slate-500 mb-2">
+          {lang === 'es'
+            ? '¿Querés probar Subrayado? Usá este PIN de acceso:'
+            : 'Want to try Subrayado? Use this access PIN:'}
+        </p>
+        <span className="font-mono font-bold text-blue-700 text-2xl tracking-widest">
+          YQK51NKC
+        </span>
+      </footer>
     </div>
   )
 }
