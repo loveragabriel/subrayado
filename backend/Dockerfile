@@ -35,4 +35,4 @@ RUN apk add --no-cache netcat-openbsd
 EXPOSE 3000
 
 # Start the application with
-CMD ["sh", "-c", "until nc -z db 5432; do echo 'Waiting for db...'; sleep 2; done && npx prisma migrate deploy && npm run start:prod"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
