@@ -4,12 +4,13 @@ import { useRouter } from 'next/navigation'
 import CreateRoomCard from '@/components/CreateRoomCard'
 import JoinRoomCard from '@/components/JoinRoomCard'
 import ConfirmationScreen from '@/components/ConfirmationScreen'
-import { ConfirmedRoom } from '@/types/room'
+import { ConfirmedRoom, EmailSentResponse } from '@/types/room'
 
 const subtitle = {
   es: 'Un lugar para compartir, debatir y aprender de otras perspectivas',
   en: 'A place to share, debate and learn from other perspectives',
 }
+
 
 function GlobeIcon() {
   return (
@@ -24,7 +25,16 @@ function GlobeIcon() {
 export default function Home() {
   const [lang, setLang] = useState<'es' | 'en'>('es')
   const [confirmedRoom, setConfirmedRoom] = useState<ConfirmedRoom | null>(null)
+  const [emailSent, setEmailSent] = useState<EmailSentResponse | null>(null)
   const router = useRouter()
+
+  const handleRoomCreated = (result: ConfirmedRoom | EmailSentResponse) => {
+    if ('emailSent' in result) {
+      setEmailSent(result)
+    } else {
+      setConfirmedRoom(result)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
@@ -48,7 +58,20 @@ export default function Home() {
       </header>
 
       <main className="flex-1 flex items-start justify-center px-6 pb-16">
-        {confirmedRoom ? (
+        {emailSent ? (
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-blue-700 mb-3">
+              {lang === 'es' ? '¡Ya casi!' : 'Almost there!'}
+            </h2>
+            <p className="text-slate-500">
+              {lang === 'es' ? 'Enviamos un link a' : 'We sent a link to'}
+            </p>
+            <p className="font-medium text-slate-800 mt-1">{emailSent.email}</p>
+            <p className="text-slate-400 text-sm mt-4">
+              {lang === 'es' ? 'Hacé click en el link para activar tu sala.' : 'Click the link to activate your room.'}
+            </p>
+          </div>
+        ) : confirmedRoom ? (
           <ConfirmationScreen
             room={confirmedRoom}
             lang={lang}
@@ -56,7 +79,7 @@ export default function Home() {
           />
         ) : (
           <div className="max-w-4xl w-full grid md:grid-cols-2 gap-8">
-            <CreateRoomCard lang={lang} onSuccess={setConfirmedRoom} />
+            <CreateRoomCard lang={lang} onSuccess={handleRoomCreated} />
             <JoinRoomCard lang={lang} onJoin={(roomId) => router.push(`/room/${roomId}?lang=${lang}`)} />
           </div>
         )}

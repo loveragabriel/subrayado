@@ -1,36 +1,53 @@
-import { Injectable } from '@nestjs/common';
-import { Resend } from 'resend';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
 import { SendMagicLinkDto } from 'src/email/dto/send-magic-link.dto';
+
 @Injectable()
 export class MailService {
-  private resend: Resend;
+  private readonly logger = new Logger(MailService.name);
+  private transporter: nodemailer.Transporter;
 
-  constructor() {
-    this.resend = new Resend(process.env.RESEND_API_KEY);
+  constructor(private readonly config: ConfigService) {
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: this.config.getOrThrow<string>('GMAIL_USER'),
+        pass: this.config.getOrThrow<string>('GMAIL_APP_PASSWORD'),
+      },
+    });
   }
 
   async sendMagicLinkEmail(dto: SendMagicLinkDto): Promise<void> {
+    const lang = dto.lang ?? 'es';
     const subject =
-      dto.lang === 'en'
+      lang === 'en'
         ? 'Activate your reading room'
         : 'Activá la sala de lectura';
 
     const html =
-      dto.lang === 'en'
+      lang === 'en'
         ? `<h2>Your room is ready</h2>
            <p>Click to activate it:</p>
            <a href="${dto.verifyUrl}">Activate room</a>
            <p>This link expires in 15 minutes.</p>`
-        : `<h2>Tu sala está lista</h2>
+        : `<h2>Sala lista</h2>
            <p>Hacé click para activarla:</p>
            <a href="${dto.verifyUrl}">Activar sala</a>
            <p>Este link expira en 15 minutos.</p>`;
 
-    await (this.resend.emails.send({
-      from: 'Subrayado <onboarding@resend.dev>',
-      to: dto.email,
-      subject,
-      html,
-    }) as Promise<unknown>);
+    try {
+      await this.transporter.sendMail({
+        from: `"Subrayado" <${this.config.getOrThrow<string>('GMAIL_USER')}>`,
+        to: dto.email,
+        subject,
+        html,
+      });
+    } catch (error) {
+      this.logger.error('Failed to send magic link email', error);
+      throw error;
+    }
   }
 }

@@ -4,3 +4,8 @@ export interface ConfirmedRoom {
   accessPin: string
   adminToken: string
 }
+
+export interface EmailSentResponse {
+  emailSent: true
+  email: string
+}
