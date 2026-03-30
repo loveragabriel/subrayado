@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import CreateRoomCard from '@/components/CreateRoomCard'
 import JoinRoomCard from '@/components/JoinRoomCard'
 import ConfirmationScreen from '@/components/ConfirmationScreen'
@@ -84,15 +85,20 @@ export default function Home() {
           </div>
         )}
       </main>
-      <footer className="fixed bottom-2.5 left-2.5 right-2.5 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 shadow-sm py-3 px-6 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-3 z-50">
-        <p className="text-sm text-slate-500 text-center">
-          {lang === 'es'
-            ? '¿Querés probar Subrayado? Usá este PIN de acceso:'
-            : 'Want to try Subrayado? Use this access PIN:'}
-        </p>
-        <span className="font-mono font-bold text-blue-700 text-xl tracking-widest">
-          YQK51NKC
-        </span>
+      <footer className="fixed bottom-2.5 left-2.5 right-2.5 rounded-xl bg-white/90 backdrop-blur-sm border border-slate-200 shadow-sm py-3 px-6 flex flex-col items-center justify-center gap-1 z-50">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-3">
+          <p className="text-sm text-slate-500 text-center">
+            {lang === 'es'
+              ? '¿Querés probar Subrayado? Usá este PIN de acceso:'
+              : 'Want to try Subrayado? Use this access PIN:'}
+          </p>
+          <span className="font-mono font-bold text-blue-700 text-xl tracking-widest">
+            YQK51NKC
+          </span>
+        </div>
+        <Link href={`/terms?lang=${lang}`} className="text-xs text-slate-400 hover:text-slate-600 transition">
+          {lang === 'es' ? 'Términos y condiciones' : 'Terms and conditions'}
+        </Link>
       </footer>
     </div>
   )
