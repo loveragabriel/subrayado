@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { Highlight } from '@/types/highlights'
 import GlossarySidebar from '@/components/GlossarySidebar'
 import SummaryPanel from '@/components/SummaryPanel'
+import MobileWarningModal from '@/components/MobileWarningModal'
 
 const PdfViewer = dynamic(() => import('@/components/PdfViewer'), {
   ssr: false,
@@ -56,7 +57,6 @@ function daysUntil(isoDate: string): number {
 export default function RoomPage() {
   const params = useParams()
   const searchParams = useSearchParams()
-  const roomId = params.id as string
   const lang = (searchParams.get('lang') === 'en' ? 'en' : 'es') as 'es' | 'en'
   const [room, setRoom] = useState<Room | null>(null)
   const [socket, setSocket] = useState<Socket | null>(null)
@@ -64,13 +64,9 @@ export default function RoomPage() {
   const [isGlossaryOpen, setIsGlossaryOpen] = useState(false)
   const [isSummaryOpen, setIsSummaryOpen] = useState(false)
 
-  const [adminToken, setAdminToken] = useState<string | null>(null)
-
-  useEffect(() => {
-    // useEffect solo corre en el browser, nunca en el servidor
-    const token = localStorage.getItem(`adminToken:${roomId}`)
-    setAdminToken(token)
-  }, [roomId])
+  const [adminToken] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? localStorage.getItem(`adminToken:${params.id as string}`) : null
+  )
 
   const t = roomCopy[lang]
 
@@ -97,13 +93,12 @@ export default function RoomPage() {
 
     newSocket.on('connect', () => {
       newSocket.emit('joinRoom', params.id)
+      setSocket(newSocket)
     })
 
     newSocket.on('newGlossaryEntry', (entry: Highlight) => {
       setGlossaryEntries((current) => [...current, entry])
     })
-
-    setSocket(newSocket)
 
     return () => { newSocket.disconnect() }
   }, [params.id, adminToken])
@@ -116,6 +111,7 @@ export default function RoomPage() {
 
   return (
     <div className="h-screen flex flex-col">
+      <MobileWarningModal lang={lang} />
       <header className="bg-blue-600 text-white p-4 flex justify-between items-center h-16">
         <h1 className="text-xl font-bold truncate">{room.title}</h1>
 

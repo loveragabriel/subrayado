@@ -5,6 +5,7 @@ import Link from 'next/link'
 import CreateRoomCard from '@/components/CreateRoomCard'
 import JoinRoomCard from '@/components/JoinRoomCard'
 import ConfirmationScreen from '@/components/ConfirmationScreen'
+import MobileWarningModal from '@/components/MobileWarningModal'
 import { ConfirmedRoom, EmailSentResponse } from '@/types/room'
 
 const subtitle = {
@@ -39,6 +40,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
+      <MobileWarningModal lang={lang} />
 
       <header className="relative flex flex-col items-center pt-16 pb-10 px-6">
         <button
