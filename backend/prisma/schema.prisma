@@ -56,6 +56,9 @@ model Highlight {
   room      Room     @relation(fields: [roomId], references: [id])
   
   createdAt DateTime @default(now())
+
+  @@index([roomId])
+  @@index([roomId,type])
 }
 
 model Glossary {
@@ -67,6 +70,8 @@ model Glossary {
   //relations
   room      Room     @relation(fields: [roomId], references: [id])
   createdAt DateTime @default(now())
+
+  @@index([roomId])
 }
 
 model MagicToken {

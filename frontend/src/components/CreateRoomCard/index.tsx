@@ -7,7 +7,7 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024
 
 /** Returns today's date as YYYY-MM-DD in local timezone — safe for string comparison with date input values */
 function localTodayStr(): string {
-  return new Date().toLocaleDateString('en-CA')
+  return new Date().toISOString().slice(0, 10)
 }
 
 interface Props {

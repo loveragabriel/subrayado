@@ -9,6 +9,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma, Room } from '@prisma/client';
 import { REST_ERRORS } from './constants/rest-errors.constants';
 import { MailService } from 'src/email/mail.service';
+import { ConfigService } from '@nestjs/config/dist/config.service';
 
 const PIN_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; // 36 chars
 const PIN_LENGTH = 8;
@@ -39,6 +40,7 @@ export class RoomsService {
   constructor(
     private prisma: PrismaService,
     private mailService: MailService,
+    private config: ConfigService,
   ) {}
 
   async create(
@@ -78,7 +80,7 @@ export class RoomsService {
         accessPin: generatePin(),
         adminToken: randomBytes(32).toString('hex'),
         startDate: createRoomDto.startDate
-          ? new Date(createRoomDto.startDate as string)
+          ? new Date(createRoomDto.startDate)
           : null,
         endDate: createRoomDto.endDate
           ? new Date(createRoomDto.endDate as string)
@@ -98,7 +100,7 @@ export class RoomsService {
       },
     });
 
-    const verifyUrl = `${process.env.FRONTEND_URL}/activate?token=${token}`;
+    const verifyUrl = `${this.config.getOrThrow<string>('FRONTEND_URL')}/activate?token=${token}`;
     await this.mailService.sendMagicLinkEmail({
       email: createRoomDto.coordinatorEmail,
       verifyUrl,
@@ -178,7 +180,10 @@ export class RoomsService {
         verified: true,
         createdAt: true,
         updatedAt: true,
-        highlights: true,
+        highlights: {
+          take: 500,
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
   }
@@ -198,7 +203,10 @@ export class RoomsService {
         endDate: true,
         coordinatorEmail: true,
         verified: true,
-        highlights: true,
+        highlights: {
+          take: 500,
+          orderBy: { createdAt: 'asc' },
+        },
         members: true,
         glossaries: true,
       },

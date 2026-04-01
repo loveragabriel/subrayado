@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { io, Socket } from 'socket.io-client'
 import '@react-pdf-viewer/core/lib/styles/index.css'
@@ -69,6 +69,7 @@ export default function RoomPage() {
   )
 
   const t = roomCopy[lang]
+  const socketRef = useRef<Socket | null>(null)
 
   //UseEffect Socket
   useEffect(() => {
@@ -80,7 +81,6 @@ export default function RoomPage() {
         setRoom(data)
         setGlossaryEntries(data.highlights.filter((h) => h.type === 'glossary'))
       } catch {
-        // Network error — room will remain null and UI shows loading state
       }
     }
     if (params.id) fetchRoom()
@@ -91,16 +91,23 @@ export default function RoomPage() {
 
     const newSocket = io(`${process.env.NEXT_PUBLIC_API_URL}`, { transports: ['websocket'], auth: { adminToken } })
 
+    socketRef.current = newSocket 
+    
     newSocket.on('connect', () => {
       newSocket.emit('joinRoom', params.id)
       setSocket(newSocket)
     })
 
     newSocket.on('newGlossaryEntry', (entry: Highlight) => {
+      console.log('📩 New glossary entry received')
       setGlossaryEntries((current) => [...current, entry])
     })
 
-    return () => { newSocket.disconnect() }
+    return () => {
+      newSocket.off('newGlossaryEntry');
+      newSocket.off('connect_error');
+      newSocket.disconnect();
+    }
   }, [params.id, adminToken])
 
   if (!room) return <div className="p-10 text-center">{t.loading}</div>
@@ -119,10 +126,10 @@ export default function RoomPage() {
           {/* Days remaining badge */}
           {daysLeft !== null && daysLeft >= 0 && (
             <div className={`px-2.5 py-1 rounded text-xs font-semibold ${isLastDay
-                ? 'bg-red-500 text-white'
-                : daysLeft <= 3
-                  ? 'bg-amber-400 text-slate-900'
-                  : 'bg-blue-800 text-blue-100'
+              ? 'bg-red-500 text-white'
+              : daysLeft <= 3
+                ? 'bg-amber-400 text-slate-900'
+                : 'bg-blue-800 text-blue-100'
               }`}>
               {isLastDay ? t.lastDay : `${daysLeft} ${t.daysLeft}`}
             </div>
