@@ -95,7 +95,7 @@ export default function Home() {
               : 'Want to try Subrayado? Use this access PIN:'}
           </p>
           <span className="font-mono font-bold text-blue-700 text-xl tracking-widest">
-            YQK51NKC
+            DUN3MHL8
           </span>
         </div>
         <Link href={`/terms?lang=${lang}`} className="text-xs text-slate-400 hover:text-slate-600 transition">
