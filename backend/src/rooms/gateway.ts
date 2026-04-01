@@ -50,13 +50,13 @@ export class RoomsGateway {
     @ConnectedSocket() client: RoomSocket,
   ) {
     try {
-      const room = await this.roomService.findOne(roomId);
+      const room = await this.roomService.findOneWithToken(roomId);
       if (!room) {
         client.emit('error', WS_ERRORS.ROOM_NOT_FOUND);
         return;
       }
 
-      const roomWithToken = await this.roomService.findOneWithToken(roomId);
+      //  const roomWithToken = await this.roomService.findOneWithToken(roomId);
 
       const userConnectes = await this.server.in(roomId).fetchSockets();
       if (userConnectes.length >= 20) {
