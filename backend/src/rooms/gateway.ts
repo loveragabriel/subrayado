@@ -66,9 +66,7 @@ export class RoomsGateway {
 
       const clientToken = (client.handshake.auth as { adminToken?: string })
         ?.adminToken;
-      client.data.isAdmin = !!(
-        clientToken && clientToken === roomWithToken?.adminToken
-      );
+      client.data.isAdmin = !!(clientToken && clientToken === room.adminToken);
 
       await client.join(roomId);
       client.emit('joinedRoom', { isAdmin: client.data.isAdmin });
