@@ -216,6 +216,10 @@ export class RoomsService {
   async findOneWithToken(id: string) {
     return this.prisma.room.findUnique({
       where: { id },
+      select: {
+        id: true,
+        adminToken: true,
+      },
     });
   }
 
