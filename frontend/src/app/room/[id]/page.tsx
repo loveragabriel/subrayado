@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { io, Socket } from 'socket.io-client'
 import '@react-pdf-viewer/core/lib/styles/index.css'
@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { Highlight } from '@/types/highlights'
 import GlossarySidebar from '@/components/GlossarySidebar'
 import SummaryPanel from '@/components/SummaryPanel'
+import MobileWarningModal from '@/components/MobileWarningModal'
 
 const PdfViewer = dynamic(() => import('@/components/PdfViewer'), {
   ssr: false,
@@ -63,9 +64,12 @@ export default function RoomPage() {
   const [isGlossaryOpen, setIsGlossaryOpen] = useState(false)
   const [isSummaryOpen, setIsSummaryOpen] = useState(false)
 
-  const [adminToken] = useState<string | null>(() => typeof window !== 'undefined' ? localStorage.getItem(`adminToken:${params.id}`) : null)
+  const [adminToken] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? localStorage.getItem(`adminToken:${params.id as string}`) : null
+  )
 
   const t = roomCopy[lang]
+  const socketRef = useRef<Socket | null>(null)
 
   //UseEffect Socket
   useEffect(() => {
@@ -76,8 +80,7 @@ export default function RoomPage() {
         const data: Room = await response.json()
         setRoom(data)
         setGlossaryEntries(data.highlights.filter((h) => h.type === 'glossary'))
-      } catch (err) {
-        console.error('Error cargando sala:', err)
+      } catch {
       }
     }
     if (params.id) fetchRoom()
@@ -86,20 +89,25 @@ export default function RoomPage() {
   useEffect(() => {
     if (!params.id) return
 
-    const newSocket = io(`${process.env.NEXT_PUBLIC_API_URL}`, { transports: ['websocket'], auth: { adminToken} })
+    const newSocket = io(`${process.env.NEXT_PUBLIC_API_URL}`, { transports: ['websocket'], auth: { adminToken } })
 
+    socketRef.current = newSocket 
+    
     newSocket.on('connect', () => {
-      console.log('🔌 Socket conectado')
       newSocket.emit('joinRoom', params.id)
+      setSocket(newSocket)
     })
 
     newSocket.on('newGlossaryEntry', (entry: Highlight) => {
+      console.log('📩 New glossary entry received')
       setGlossaryEntries((current) => [...current, entry])
     })
 
-    setSocket(newSocket)
-
-    return () => { newSocket.disconnect() }
+    return () => {
+      newSocket.off('newGlossaryEntry');
+      newSocket.off('connect_error');
+      newSocket.disconnect();
+    }
   }, [params.id, adminToken])
 
   if (!room) return <div className="p-10 text-center">{t.loading}</div>
@@ -110,19 +118,19 @@ export default function RoomPage() {
 
   return (
     <div className="h-screen flex flex-col">
+      <MobileWarningModal lang={lang} />
       <header className="bg-blue-600 text-white p-4 flex justify-between items-center h-16">
         <h1 className="text-xl font-bold truncate">{room.title}</h1>
 
         <div className="flex items-center gap-2">
           {/* Days remaining badge */}
           {daysLeft !== null && daysLeft >= 0 && (
-            <div className={`px-2.5 py-1 rounded text-xs font-semibold ${
-              isLastDay
-                ? 'bg-red-500 text-white'
-                : daysLeft <= 3
-                  ? 'bg-amber-400 text-slate-900'
-                  : 'bg-blue-800 text-blue-100'
-            }`}>
+            <div className={`px-2.5 py-1 rounded text-xs font-semibold ${isLastDay
+              ? 'bg-red-500 text-white'
+              : daysLeft <= 3
+                ? 'bg-amber-400 text-slate-900'
+                : 'bg-blue-800 text-blue-100'
+              }`}>
               {isLastDay ? t.lastDay : `${daysLeft} ${t.daysLeft}`}
             </div>
           )}
@@ -201,8 +209,8 @@ function BookIcon() {
 function SparklesIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
-      <path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>
+      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+      <path d="M20 3v4" /><path d="M22 5h-4" /><path d="M4 17v2" /><path d="M5 18H3" />
     </svg>
   )
 }

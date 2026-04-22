@@ -7,12 +7,14 @@ import {
   NotFoundException,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
-import { UpdateRoomDto } from './dto/update-room.dto';
 import { FileInterceptor } from '@nestjs/platform-express/multer/interceptors/file.interceptor';
 import { cloudinaryStorage } from 'src/config/cloudinary/config';
 import { Throttle } from '@nestjs/throttler';
+import { CreateRoomDto } from './dto/create-room.dto';
+import { REST_ERRORS } from './constants/rest-errors.constants';
 @Controller('rooms')
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
@@ -30,10 +32,7 @@ export class RoomsController {
       limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
       fileFilter: (_req, file, callback) => {
         if (!file.originalname.match(/\.(pdf|epub)$/i)) {
-          return callback(
-            new Error('Solo se permiten archivos PDF o ePub'),
-            false,
-          );
+          return callback(new Error(REST_ERRORS.INVALID_FILE_FORMAT), false);
         }
         callback(null, true);
       },
@@ -41,35 +40,29 @@ export class RoomsController {
   )
   async create(
     @UploadedFile() file: Express.Multer.File,
-    @Body('title') title: string,
-    @Body('startDate') startDate?: string,
-    @Body('endDate') endDate?: string,
+    @Body() body: CreateRoomDto,
   ) {
     if (!file) {
-      throw new NotFoundException(
-        'No se ha subido ningún archivo o el formato es inválido',
-      );
+      throw new NotFoundException(REST_ERRORS.MISSING_FILE);
     }
-    const multerFile = file as Express.Multer.File & { path: string };
-    return this.roomsService.create(
-      { title, bookUrl: multerFile.path, startDate, endDate },
-      file,
-    );
+    return this.roomsService.create(body, file);
   }
 
   @Get('join/:pin')
   async joinRoom(@Param('pin') pin: string) {
     const room = await this.roomsService.findByPin(pin);
-    console.log('Buscando sala con PIN:', pin);
     if (!room) {
-      throw new NotFoundException(`La sala con el pin ${pin} no existe`);
+      throw new NotFoundException(`${REST_ERRORS.ROOM_NOT_FOUND} ${pin}`);
     }
     return room;
   }
 
-  @Get()
-  findAll() {
-    return this.roomsService.findAll();
+  @Get('verify')
+  async verifyMagicToken(@Query('token') token: string) {
+    if (!token) {
+      throw new NotFoundException(REST_ERRORS.INVALID_TOKEN);
+    }
+    return this.roomsService.verifyMagicToken(token);
   }
 
   @Get(':id')

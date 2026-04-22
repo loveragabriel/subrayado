@@ -1,15 +1,23 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+let configured = false;
+
+function ensureConfigured() {
+  if (!configured) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+    configured = true;
+  }
+}
 
 export const cloudinaryStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (_req, file) => {
+    ensureConfigured();
     const isEpub = file.originalname.toLowerCase().endsWith('.epub');
     return {
       folder: 'subrayado_books',

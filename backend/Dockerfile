@@ -29,6 +29,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
+RUN apk add --no-cache netcat-openbsd
 
 # Expose t-a port the app runs on
 EXPOSE 3000

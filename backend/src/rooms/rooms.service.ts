@@ -1,8 +1,15 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma, Room } from '@prisma/client';
+import { REST_ERRORS } from './constants/rest-errors.constants';
+import { MailService } from 'src/email/mail.service';
+import { ConfigService } from '@nestjs/config/dist/config.service';
 
 const PIN_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; // 36 chars
 const PIN_LENGTH = 8;
@@ -30,44 +37,42 @@ export function generatePin(): string {
 
 @Injectable()
 export class RoomsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+    private config: ConfigService,
+  ) {}
 
   async create(
     createRoomDto: CreateRoomDto,
     file: Express.Multer.File,
-  ): Promise<Room> {
+  ): Promise<{ message: string; email: string }> {
     // Compare YYYY-MM-DD strings in local timezone — avoids UTC parsing shifting dates by one day
     const todayStr = new Date().toLocaleDateString('en-CA');
 
     if (createRoomDto.startDate) {
       const startStr = (createRoomDto.startDate as string).slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(startStr)) {
-        throw new BadRequestException('La fecha de inicio no es válida.');
+        throw new BadRequestException(REST_ERRORS.INVALID_START_DATE);
       }
       if (startStr < todayStr) {
-        throw new BadRequestException(
-          'La fecha de inicio no puede ser anterior a hoy.',
-        );
+        throw new BadRequestException(REST_ERRORS.START_DATE_IN_PAST);
       }
 
       if (createRoomDto.endDate) {
         const endStr = (createRoomDto.endDate as string).slice(0, 10);
         if (!/^\d{4}-\d{2}-\d{2}$/.test(endStr)) {
-          throw new BadRequestException('La fecha de cierre no es válida.');
+          throw new BadRequestException(REST_ERRORS.INVALID_END_DATE);
         }
         if (endStr <= startStr) {
-          throw new BadRequestException(
-            'La fecha de cierre debe ser posterior a la fecha de inicio.',
-          );
+          throw new BadRequestException(REST_ERRORS.END_DATE_BEFORE_START);
         }
       }
     } else if (createRoomDto.endDate) {
-      throw new BadRequestException(
-        'No puedes definir una fecha de cierre sin una fecha de inicio.',
-      );
+      throw new BadRequestException(REST_ERRORS.END_DATE_WITHOUT_START);
     }
 
-    return this.prisma.room.create({
+    const room = await this.prisma.room.create({
       data: {
         title: createRoomDto.title,
         bookUrl: file.path,
@@ -75,14 +80,71 @@ export class RoomsService {
         accessPin: generatePin(),
         adminToken: randomBytes(32).toString('hex'),
         startDate: createRoomDto.startDate
-          ? new Date(createRoomDto.startDate as string)
+          ? new Date(createRoomDto.startDate)
           : null,
         endDate: createRoomDto.endDate
           ? new Date(createRoomDto.endDate as string)
           : null,
       },
     });
+
+    const token = randomBytes(32).toString('hex');
+    const expireAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min from now
+
+    await this.prisma.magicToken.create({
+      data: {
+        email: createRoomDto.coordinatorEmail,
+        token,
+        roomId: room.id,
+        expiresAt: expireAt,
+      },
+    });
+
+    const verifyUrl = `${this.config.getOrThrow<string>('FRONTEND_URL')}/activate?token=${token}`;
+    await this.mailService.sendMagicLinkEmail({
+      email: createRoomDto.coordinatorEmail,
+      verifyUrl,
+      lang: createRoomDto.lang,
+    });
+
+    return { message: 'email_sent', email: createRoomDto.coordinatorEmail };
   }
+
+  async verifyMagicToken(
+    token: string,
+  ): Promise<{ adminToken: string; roomId: string }> {
+    const magicToken = await this.prisma.magicToken.findUnique({
+      where: { token },
+      include: { room: true },
+    });
+
+    if (!magicToken) {
+      throw new NotFoundException(REST_ERRORS.INVALID_TOKEN);
+    }
+    if (magicToken.used) {
+      throw new BadRequestException(REST_ERRORS.TOKEN_ALREADY_USED);
+    }
+    if (magicToken.expiresAt < new Date()) {
+      throw new BadRequestException(REST_ERRORS.TOKEN_EXPIRED);
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.room.update({
+        where: { id: magicToken.roomId },
+        data: { verified: true },
+      }),
+      this.prisma.magicToken.update({
+        where: { token },
+        data: { used: true },
+      }),
+    ]);
+
+    return {
+      adminToken: magicToken.room.adminToken!,
+      roomId: magicToken.roomId,
+    };
+  }
+
   async createHighlight(data: {
     roomId: string;
     page: number;
@@ -99,25 +161,65 @@ export class RoomsService {
     });
   }
 
-  async findAll() {
-    return this.prisma.room.findMany({
-      include: { highlights: true },
-    });
-  }
-
-  async findByPin(pin: string): Promise<Room | null> {
+  async findByPin(
+    pin: string,
+  ): Promise<(Omit<Room, 'adminToken'> & { highlights: any[] }) | null> {
     return this.prisma.room.findUnique({
       where: {
         accessPin: pin.toUpperCase(),
       },
-      include: { highlights: true },
+      select: {
+        id: true,
+        title: true,
+        accessPin: true,
+        bookUrl: true,
+        bookPublicId: true,
+        startDate: true,
+        endDate: true,
+        coordinatorEmail: true,
+        verified: true,
+        createdAt: true,
+        updatedAt: true,
+        highlights: {
+          take: 500,
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     });
   }
 
   async findOne(id: string) {
     return this.prisma.room.findUnique({
       where: { id },
-      include: { highlights: true },
+      select: {
+        id: true,
+        title: true,
+        accessPin: true,
+        bookUrl: true,
+        bookPublicId: true,
+        createdAt: true,
+        updatedAt: true,
+        startDate: true,
+        endDate: true,
+        coordinatorEmail: true,
+        verified: true,
+        highlights: {
+          take: 500,
+          orderBy: { createdAt: 'asc' },
+        },
+        members: true,
+        glossaries: true,
+      },
+    });
+  }
+
+  async findOneWithToken(id: string) {
+    return this.prisma.room.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        adminToken: true,
+      },
     });
   }
 
